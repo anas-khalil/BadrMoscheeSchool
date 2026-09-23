@@ -9,16 +9,20 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
+    function hasUserDoc() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && userDoc().role == 'admin';
+      return isSignedIn() && hasUserDoc() && userDoc().role == 'admin' && userDoc().status == 'active';
     }
 
     function isTeacher() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && userDoc().role == 'teacher';
+      return isSignedIn() && hasUserDoc() && userDoc().role == 'teacher' && userDoc().status == 'active';
     }
 
     function isParent() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && userDoc().role == 'parent';
+      return isSignedIn() && hasUserDoc() && userDoc().role == 'parent' && userDoc().status == 'active';
     }
 
     function teacherHasGroup(groupId) {
@@ -42,25 +46,29 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Active directory profiles expose only the fields the UI needs:
-      // name, email, role, and status. Sensitive access fields remain protected
-      // by the write rules below and are never trusted by the client.
-      allow read: if isSignedIn() && (
-        userId == request.auth.uid ||
-        isAdmin() ||
-        resource.data.status == 'active'
-      );
+      // A profile is readable only by its owner or an admin. Do NOT widen
+      // this to "any active user" — a full-document read leaks
+      // linkedChildIds/assignedGroupIds to anyone signed in. If a public
+      // staff/parent directory is ever needed, build it as a separate,
+      // deliberately-minimal collection instead of loosening this rule.
+      allow read: if isSignedIn() && (userId == request.auth.uid || isAdmin());
 
-      // Self-signup may create only a pending account. Access fields are not
-      // effective until an existing admin approves the profile.
+      // Self-signup may ONLY create a pending PARENT account. Teacher/admin
+      // accounts must be created or promoted by an existing admin (the very
+      // first admin is bootstrapped manually in Firebase Console, per the
+      // README). isAdmin()/isTeacher() do not check `status`, so allowing
+      // role in ['admin','teacher'] here would grant those privileges the
+      // instant the document is created, regardless of status — do not
+      // reintroduce that.
       allow create: if isAdmin()
         || (isSignedIn() && userId == request.auth.uid
-        && request.resource.data.role in ['admin', 'teacher', 'parent']
+            && request.resource.data.role == 'parent'
             && request.resource.data.status == 'pending');
 
-      // A user may edit their own profile (e.g. name/language), but can NEVER
-      // change their own role/status/linkedChildIds/assignedGroupIds — those
-      // are the fields that grant access, and only an admin may touch them.
+      // A user may edit their own profile (e.g. name/language), but can
+      // NEVER change their own role/status/linkedChildIds/assignedGroupIds —
+      // those are the fields that grant access, and only an admin may touch
+      // them.
       allow update: if isAdmin()
         || (isSignedIn() && userId == request.auth.uid
             && !request.resource.data.diff(resource.data).affectedKeys()
