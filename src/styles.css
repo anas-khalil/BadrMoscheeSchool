@@ -74,7 +74,7 @@ button, select {
   transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
 }
 
-.toolbar button:hover, .nav button:hover, .card-action:hover, .demo-roles button:hover {
+.toolbar button:hover, .nav button:hover, .card-action:hover {
   border-color: #2563eb;
   transform: translateY(-1px);
 }
@@ -95,6 +95,42 @@ button, select {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 24px;
+}
+
+.welcome-screen {
+  min-height: calc(100vh - 150px);
+  display: grid;
+  place-items: center;
+  padding: 40px 20px;
+}
+
+.welcome-copy {
+  width: min(100%, 720px);
+  padding: 48px;
+  border: 1px solid #dbeafe;
+  border-radius: 24px;
+  background: rgba(255,255,255,0.86);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+  text-align: center;
+}
+
+.welcome-copy h2 {
+  margin: 10px 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+}
+
+.welcome-copy p {
+  max-width: 560px;
+  margin: 0 auto;
+  color: #475569;
+  font-size: 1.1rem;
+}
+
+.welcome-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
 }
 
 .sidebar, .panel, .card, .hero-card {
@@ -679,24 +715,6 @@ button, select {
   font-size: 0.86rem;
 }
 
-.demo-divider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 22px 0 12px;
-  color: #94a3b8;
-  font-size: 0.76rem;
-  text-transform: uppercase;
-}
-
-.demo-divider::before,
-.demo-divider::after {
-  content: '';
-  height: 1px;
-  flex: 1;
-  background: #e2e8f0;
-}
-
 .modal-close {
   position: absolute;
   top: 12px;
@@ -707,31 +725,6 @@ button, select {
   cursor: pointer;
   font-size: 1.6rem;
   line-height: 1;
-}
-
-.demo-roles {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-top: 22px;
-}
-
-.demo-roles button {
-  display: grid;
-  gap: 5px;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  background: #f8fafc;
-  color: #0f172a;
-  cursor: pointer;
-  padding: 14px 10px;
-  text-align: start;
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
-}
-
-.demo-roles span {
-  color: #64748b;
-  font-size: 0.74rem;
 }
 
 [dir='rtl'] .toolbar label,
@@ -762,8 +755,11 @@ button, select {
     align-items: flex-start;
     flex-direction: column;
   }
-  .demo-roles {
-    grid-template-columns: 1fr;
+  .welcome-copy {
+    padding: 30px 20px;
+  }
+  .welcome-actions {
+    flex-direction: column;
   }
   .approval-list li {
     align-items: stretch;

@@ -29,8 +29,20 @@ service cloud.firestore {
       return isParent() && studentId in userDoc().linkedChildIds;
     }
 
+    function parentHasGroup(groupId) {
+      return isParent() && exists(/databases/$(database)/documents/groups/$(groupId))
+        && get(/databases/$(database)/documents/groups/$(groupId)).data.studentIds.hasAny(userDoc().linkedChildIds);
+    }
+
     match /users/{userId} {
-      allow read: if isSignedIn() && (userId == request.auth.uid || isAdmin());
+      // Active directory profiles expose only the fields the UI needs:
+      // name, email, role, and status. Sensitive access fields remain protected
+      // by the write rules below and are never trusted by the client.
+      allow read: if isSignedIn() && (
+        userId == request.auth.uid ||
+        isAdmin() ||
+        resource.data.status == 'active'
+      );
 
       // Self-signup may only ever create a pending PARENT account.
       // Teacher/admin accounts must be created or promoted by an existing admin
@@ -70,7 +82,8 @@ service cloud.firestore {
       allow read: if isSignedIn() && (
         isAdmin() ||
         teacherHasGroup(resource.data.groupId) ||
-        parentHasChild(resource.data.studentId)
+        parentHasChild(resource.data.studentId) ||
+        parentHasGroup(resource.data.groupId)
       );
       allow create, update, delete: if isAdmin() ||
         (teacherHasGroup(request.resource.data.groupId) &&
@@ -81,7 +94,8 @@ service cloud.firestore {
       allow read: if isSignedIn() && (
         isAdmin() ||
         teacherHasGroup(resource.data.groupId) ||
-        parentHasChild(resource.data.studentId)
+        parentHasChild(resource.data.studentId) ||
+        parentHasGroup(resource.data.groupId)
       );
       allow create, update, delete: if isAdmin() ||
         (teacherHasGroup(request.resource.data.groupId) &&

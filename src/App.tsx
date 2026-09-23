@@ -22,11 +22,6 @@ type Locale = 'en' | 'de' | 'ar';
 type Role = 'admin' | 'teacher' | 'parent';
 type Section = 'dashboard' | 'calendar' | 'messages' | 'attendance' | 'assignments' | 'privacy' | 'approvals' | 'groups';
 
-type DemoUser = {
-  email: string;
-  role: Role;
-};
-
 type LiveItem = {
   id: string;
   text: string;
@@ -36,11 +31,19 @@ type DirectoryUser = {
   id: string;
   name: string;
   email: string;
+  role?: Role;
 };
 
 type DirectoryStudent = {
   id: string;
   name: string;
+  parentIds?: string[];
+};
+
+type DirectoryGroup = {
+  id: string;
+  name: string;
+  studentIds: string[];
 };
 
 type AttendanceStudent = DirectoryStudent & {
@@ -58,7 +61,7 @@ type AttendanceSummary = {
 
 const translations: Record<Locale, Record<string, string>> = {
   en: {
-    appTitle: 'Badr Moschee School',
+    appTitle: 'Badr Mosque School',
     admin: 'Admin',
     teacher: 'Teacher',
     parent: 'Parent',
@@ -75,8 +78,9 @@ const translations: Record<Locale, Record<string, string>> = {
     welcome: 'School management dashboard',
     pending: 'Pending approval',
     note: 'This app uses Firebase Firestore only and keeps notifications in-app.',
-    loginHint: 'Choose a demo role to explore the dashboard.',
-    demoLogin: 'Continue as demo',
+    loginHint: 'Sign in to access your school dashboard.',
+    welcomeTitle: 'Welcome to Badr Mosque School',
+    welcomeText: 'Manage attendance, assignments, messages, and school groups in one place.',
     close: 'Close',
     signedInAs: 'Signed in as',
     selected: 'Selected view',
@@ -84,13 +88,13 @@ const translations: Record<Locale, Record<string, string>> = {
     email: 'Email address',
     password: 'Password',
     signIn: 'Sign in',
-    createAccount: 'Create parent account',
+    createAccount: 'Create Account',
     switchToSignup: 'Need an account? Sign up',
     switchToLogin: 'Already registered? Sign in',
     authError: 'Unable to complete authentication. Check your details and try again.',
     pendingNote: 'Your account is pending admin approval.'
-    ,approvals: 'Approvals', groups: 'Groups', pendingParents: 'Pending parent accounts', approve: 'Approve', approved: 'Parent approved', approvalError: 'Could not update this account.', eventTitle: 'Event title', eventDate: 'Event date', eventAudience: 'Audience', allSchool: 'Everyone', createEvent: 'Create event', eventCreated: 'Event created.', group: 'Group', studentId: 'Student ID', studentName: 'Student name', assignmentTitle: 'Assignment title', description: 'Description', dueDate: 'Due date', createAssignment: 'Post assignment', assignmentCreated: 'Assignment posted', attendanceStatus: 'Status', present: 'Present', absent: 'Absent', late: 'Late', saveAttendance: 'Save attendance', attendanceSaved: 'Attendance saved', loginButton: 'Login', signupButton: 'Sign up', chooseAccountType: 'Choose account type', accountType: 'Account type', signupNote: 'All new accounts require admin approval.', accountCreated: 'Account created. Please wait for admin approval.', groupId: 'Group ID', subject: 'Subject', level: 'Level', teacherUid: 'Teacher UID', studentIds: 'Students', schedule: 'Weekly schedule', createGroup: 'Create group', groupCreated: 'Group created and assigned.', attended: 'Attended', markAttendance: 'Mark Saturday attendance', attendanceDate: 'Session date', attendanceSummary: 'Attendance summary', attendanceRate: 'Attendance rate', viewHistory: 'View student history', history: 'History', noAttendanceData: 'No attendance data yet.', saturdayOnly: 'Please choose a Saturday.', recipientUid: 'Recipient user ID', messageText: 'Message', sendMessage: 'Send message', messageSent: 'Message sent.'
-    ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child'
+    ,approvals: 'Approvals', groups: 'Groups', pendingParents: 'Pending parent accounts', approve: 'Approve', approved: 'Parent approved', approvalError: 'Could not update this account.', eventTitle: 'Event title', eventDate: 'Event date', eventAudience: 'Audience', allSchool: 'Everyone', createEvent: 'Create event', eventCreated: 'Event created.', group: 'Group', studentId: 'Student ID', studentName: 'Student name', assignmentTitle: 'Assignment title', description: 'Description', dueDate: 'Due date', createAssignment: 'Post assignment', assignmentCreated: 'Assignment posted', attendanceStatus: 'Status', present: 'Present', absent: 'Absent', late: 'Late', saveAttendance: 'Save attendance', attendanceSaved: 'Attendance saved', loginButton: 'Login', signupButton: 'Sign up', chooseAccountType: 'Choose account type', accountType: 'Account type', signupNote: 'All new accounts require admin approval.', accountCreated: 'Account created. Please wait for admin approval.', groupId: 'Group ID', subject: 'Subject', level: 'Level', teacherUid: 'Teacher UID', studentIds: 'Students', schedule: 'Weekly schedule', createGroup: 'Create group', groupCreated: 'Group created and assigned.', attended: 'Attended', markAttendance: 'Mark Saturday attendance', attendanceDate: 'Session date', attendanceSummary: 'Attendance summary', attendanceRate: 'Attendance rate', viewHistory: 'View student history', history: 'History', noAttendanceData: 'No attendance data yet.', saturdayOnly: 'Please choose a Saturday.', messageText: 'Message', sendMessage: 'Send message', noRecords: 'No records yet.'
+    ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child', name: 'Full name', students: 'Students', teachers: 'Teachers', unreadMessages: 'Unread messages', unreadAssignments: 'Unread assignments', recipientType: 'Send to', everyone: 'Everyone', groupRecipient: 'Group', teacherRecipient: 'Teacher', parentRecipient: 'Parent', individualRecipient: 'Individual parent', recipient: 'Recipient', selectRecipient: 'Select recipient', messageSent: 'Message sent.'
   },
   de: {
     appTitle: 'Badr Moschee Schule',
@@ -110,8 +114,9 @@ const translations: Record<Locale, Record<string, string>> = {
     welcome: 'Schulmanagement-Dashboard',
     pending: 'Genehmigung ausstehend',
     note: 'Diese App verwendet nur Firebase Firestore und hält Benachrichtigungen in der App.',
-    loginHint: 'Wählen Sie eine Demo-Rolle, um das Dashboard zu erkunden.',
-    demoLogin: 'Als Demo fortfahren',
+    loginHint: 'Melden Sie sich an, um Ihr Schuldashboard zu öffnen.',
+    welcomeTitle: 'Willkommen bei der Badr Moschee Schule',
+    welcomeText: 'Verwalten Sie Anwesenheit, Aufgaben, Nachrichten und Gruppen an einem Ort.',
     close: 'Schließen',
     signedInAs: 'Angemeldet als',
     selected: 'Ausgewählte Ansicht',
@@ -119,16 +124,16 @@ const translations: Record<Locale, Record<string, string>> = {
     email: 'E-Mail-Adresse',
     password: 'Passwort',
     signIn: 'Anmelden',
-    createAccount: 'Elternkonto erstellen',
+    createAccount: 'Konto erstellen',
     switchToSignup: 'Noch kein Konto? Registrieren',
     switchToLogin: 'Bereits registriert? Anmelden',
     authError: 'Anmeldung nicht möglich. Bitte Daten prüfen und erneut versuchen.',
     pendingNote: 'Ihr Konto wartet auf die Genehmigung durch die Verwaltung.'
     ,approvals: 'Genehmigungen', groups: 'Gruppen', pendingParents: 'Ausstehende Elternkonten', approve: 'Genehmigen', approved: 'Elternkonto genehmigt', approvalError: 'Konto konnte nicht aktualisiert werden.', eventTitle: 'Veranstaltungstitel', eventDate: 'Veranstaltungsdatum', eventAudience: 'Zielgruppe', allSchool: 'Alle', createEvent: 'Veranstaltung erstellen', eventCreated: 'Veranstaltung erstellt.', group: 'Gruppe', studentId: 'Schüler-ID', studentName: 'Name des Schülers', assignmentTitle: 'Aufgabentitel', description: 'Beschreibung', dueDate: 'Fälligkeitsdatum', createAssignment: 'Aufgabe veröffentlichen', assignmentCreated: 'Aufgabe veröffentlicht', attendanceStatus: 'Status', present: 'Anwesend', absent: 'Abwesend', late: 'Verspätet', saveAttendance: 'Anwesenheit speichern', attendanceSaved: 'Anwesenheit gespeichert', loginButton: 'Anmelden', signupButton: 'Registrieren', chooseAccountType: 'Kontotyp auswählen', accountType: 'Kontotyp', signupNote: 'Alle neuen Konten benötigen eine Genehmigung.', accountCreated: 'Konto erstellt. Bitte warten Sie auf die Genehmigung.', groupId: 'Gruppen-ID', subject: 'Fach', level: 'Stufe', teacherUid: 'Lehrer-UID', studentIds: 'Schüler', schedule: 'Wochenplan', createGroup: 'Gruppe erstellen', groupCreated: 'Gruppe erstellt und zugewiesen.', attended: 'Anwesend', markAttendance: 'Samstagsanwesenheit erfassen', attendanceDate: 'Unterrichtsdatum', attendanceSummary: 'Anwesenheitsübersicht', attendanceRate: 'Anwesenheitsquote', viewHistory: 'Schülerverlauf anzeigen', history: 'Verlauf', noAttendanceData: 'Noch keine Anwesenheitsdaten.', saturdayOnly: 'Bitte wählen Sie einen Samstag.'
-    ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', requestedChild: 'Angefragtes Kind'
+    ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name', students: 'Schüler', teachers: 'Lehrer', unreadMessages: 'Ungelesene Nachrichten', unreadAssignments: 'Ungelesene Aufgaben', recipientType: 'Senden an', everyone: 'Alle', groupRecipient: 'Gruppe', teacherRecipient: 'Lehrer', parentRecipient: 'Elternteil', individualRecipient: 'Einzelnen Elternteil', recipient: 'Empfänger', selectRecipient: 'Empfänger auswählen', messageSent: 'Nachricht gesendet.', noRecords: 'Noch keine Einträge.'
   },
   ar: {
-    appTitle: 'مدرسة بدر المئذنة',
+    appTitle: 'المدرسة العربية بمسجد بدر',
     admin: 'إدارة',
     teacher: 'معلم',
     parent: 'ولي أمر',
@@ -145,8 +150,9 @@ const translations: Record<Locale, Record<string, string>> = {
     welcome: 'لوحة إدارة المدرسة',
     pending: 'بانتظار الموافقة',
     note: 'يستخدم هذا التطبيق Firebase Firestore فقط مع إشعارات داخل التطبيق.',
-    loginHint: 'اختر دوراً تجريبياً لاستكشاف لوحة التحكم.',
-    demoLogin: 'المتابعة كتجربة',
+    loginHint: 'سجل الدخول للوصول إلى لوحة المدرسة.',
+    welcomeTitle: 'مرحباً بكم في المدرسة العربية بمسجد بدر',
+    welcomeText: 'إدارة الحضور والواجبات والرسائل والمجموعات في مكان واحد.',
     close: 'إغلاق',
     signedInAs: 'تم تسجيل الدخول كـ',
     selected: 'العرض المحدد',
@@ -154,48 +160,13 @@ const translations: Record<Locale, Record<string, string>> = {
     email: 'البريد الإلكتروني',
     password: 'كلمة المرور',
     signIn: 'تسجيل الدخول',
-    createAccount: 'إنشاء حساب ولي أمر',
+    createAccount: 'إنشاء الحساب',
     switchToSignup: 'ليس لديك حساب؟ سجل الآن',
     switchToLogin: 'لديك حساب؟ سجل الدخول',
     authError: 'تعذر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.',
     pendingNote: 'حسابك بانتظار موافقة الإدارة.'
     ,approvals: 'الموافقات', groups: 'المجموعات', pendingParents: 'حسابات أولياء الأمور المعلقة', approve: 'موافقة', approved: 'تمت الموافقة على الحساب', approvalError: 'تعذر تحديث الحساب.', eventTitle: 'عنوان الفعالية', eventDate: 'تاريخ الفعالية', eventAudience: 'الجمهور', allSchool: 'الجميع', createEvent: 'إنشاء فعالية', eventCreated: 'تم إنشاء الفعالية.', group: 'المجموعة', studentId: 'معرف الطالب', studentName: 'اسم الطالب', assignmentTitle: 'عنوان الواجب', description: 'الوصف', dueDate: 'تاريخ التسليم', createAssignment: 'نشر الواجب', assignmentCreated: 'تم نشر الواجب', attendanceStatus: 'الحالة', present: 'حاضر', absent: 'غائب', late: 'متأخر', saveAttendance: 'حفظ الحضور', attendanceSaved: 'تم حفظ الحضور', loginButton: 'تسجيل الدخول', signupButton: 'إنشاء حساب', chooseAccountType: 'اختر نوع الحساب', accountType: 'نوع الحساب', signupNote: 'تحتاج جميع الحسابات الجديدة إلى موافقة الإدارة.', accountCreated: 'تم إنشاء الحساب. يرجى انتظار موافقة الإدارة.', groupId: 'معرف المجموعة', subject: 'المادة', level: 'المستوى', teacherUid: 'معرف المعلم', studentIds: 'الطلاب', schedule: 'الجدول الأسبوعي', createGroup: 'إنشاء مجموعة', groupCreated: 'تم إنشاء المجموعة وتعيينها.', attended: 'حاضر', markAttendance: 'تسجيل حضور السبت', attendanceDate: 'تاريخ الحصة', attendanceSummary: 'ملخص الحضور', attendanceRate: 'نسبة الحضور', viewHistory: 'عرض سجل الطالب', history: 'السجل', noAttendanceData: 'لا توجد بيانات حضور بعد.', saturdayOnly: 'يرجى اختيار يوم السبت.'
-    ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', requestedChild: 'الطفل المطلوب'
-  }
-};
-
-const demoContent: Record<Section, { title: string; items: string[] }> = {
-  dashboard: {
-    title: 'Today at school',
-    items: ['2 unread messages', '1 new Quran assignment', 'Attendance is ready for review']
-  },
-  calendar: {
-    title: 'Upcoming calendar',
-    items: ['Tue, 24 Sep · Quran groups', 'Fri, 3 Oct · School holiday', 'Sun, 12 Oct · Parent meeting']
-  },
-  messages: {
-    title: 'Inbox',
-    items: ['Teacher Ali · Please review this week\'s assignment', 'School office · Welcome to the new term', 'Unread absence notice · Amina Hassan']
-  },
-  attendance: {
-    title: 'Attendance overview',
-    items: ['Amina Hassan · 96% present', 'Yusuf Rahman · 92% present', 'Next session · Tuesday at 17:30']
-  },
-  assignments: {
-    title: 'Current assignments',
-    items: ['Surah Al-Fatiha revision · Due 30 Sep', 'Arabic alphabet practice · Due 2 Oct', 'Memorization status · Reviewing']
-  },
-  privacy: {
-    title: 'Your data and privacy',
-    items: ['EU-hosted Firestore data', 'Request a child data export', 'Request account or child data deletion']
-  },
-  approvals: {
-    title: 'Parent approvals',
-    items: ['Review pending parent accounts', 'Link each parent to a child', 'Approve access to school data']
-  },
-  groups: {
-    title: 'School groups',
-    items: ['Create a subject and level group', 'Assign a teacher', 'Add student document IDs']
+    ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل', students: 'الطلاب', teachers: 'المعلمون', unreadMessages: 'الرسائل غير المقروءة', unreadAssignments: 'الواجبات غير المقروءة', recipientType: 'إرسال إلى', everyone: 'الجميع', groupRecipient: 'مجموعة', teacherRecipient: 'معلم', parentRecipient: 'ولي أمر', individualRecipient: 'ولي أمر محدد', recipient: 'المستلم', selectRecipient: 'اختر المستلم', messageSent: 'تم إرسال الرسالة.', noRecords: 'لا توجد سجلات بعد.'
   }
 };
 
@@ -207,9 +178,9 @@ function App() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [authEntry, setAuthEntry] = useState<'choice' | 'form'>('choice');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [signupName, setSignupName] = useState('');
   const [signupStudentName, setSignupStudentName] = useState('');
   const [authError, setAuthError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -235,7 +206,9 @@ function App() {
   const [lateStudentIds, setLateStudentIds] = useState<string[]>([]);
   const [attendanceSummaries, setAttendanceSummaries] = useState<AttendanceSummary[]>([]);
   const [teacherMessage, setTeacherMessage] = useState('');
+  const [recipientType, setRecipientType] = useState<'everyone' | 'group' | 'teacher' | 'parent' | 'individual' | 'admin'>('teacher');
   const [recipientUid, setRecipientUid] = useState('');
+  const [recipientGroupId, setRecipientGroupId] = useState('');
   const [messageText, setMessageText] = useState('');
   const [messageStatus, setMessageStatus] = useState('');
   const [groupId, setGroupId] = useState('');
@@ -248,14 +221,9 @@ function App() {
   const [newStudentName, setNewStudentName] = useState('');
   const [availableTeachers, setAvailableTeachers] = useState<DirectoryUser[]>([]);
   const [availableStudents, setAvailableStudents] = useState<DirectoryStudent[]>([]);
-  const [demoUser, setDemoUser] = useState<DemoUser | null>(() => {
-    try {
-      const saved = localStorage.getItem('badr-school-demo-user');
-      return saved ? JSON.parse(saved) as DemoUser : null;
-    } catch {
-      return null;
-    }
-  });
+  const [availableUsers, setAvailableUsers] = useState<DirectoryUser[]>([]);
+  const [availableGroups, setAvailableGroups] = useState<Array<{ id: string; name: string; studentIds: string[] }>>([]);
+  const [dashboardCounts, setDashboardCounts] = useState({ students: 0, teachers: 0, groups: 0, unreadMessages: 0, unreadAssignments: 0 });
 
   useEffect(() => {
     const savedLocale = (localStorage.getItem('badr-school-locale') as Locale) || 'en';
@@ -271,16 +239,80 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (demoUser) setRole(demoUser.role);
-  }, [demoUser]);
+    if (!user || profileStatus !== 'active') return;
+    let cancelled = false;
 
-  const signInDemo = (selectedRole: Role) => {
-    const nextUser = { role: selectedRole, email: `${selectedRole}@demo.badrschool.de` };
-    setDemoUser(nextUser);
-    setRole(selectedRole);
-    localStorage.setItem('badr-school-demo-user', JSON.stringify(nextUser));
-    setIsLoginOpen(false);
-  };
+    const loadDashboardData = async () => {
+      try {
+        const [userSnapshot, groupSnapshot, studentSnapshot, messageSnapshot] = await Promise.all([
+          getDocs(query(collection(db, 'users'), where('status', '==', 'active'))),
+          role === 'admin' ? getDocs(collection(db, 'groups')) : Promise.all(assignedGroupIds.map((groupId) => getDoc(doc(db, 'groups', groupId)))),
+          role === 'admin' || role === 'parent' ? Promise.all((role === 'admin' ? [] : linkedChildIds).map((id) => getDoc(doc(db, 'students', id)))) : Promise.resolve([]),
+          getDocs(query(collection(db, 'messages'), where('participants', 'array-contains', user.uid))),
+        ]);
+        if (cancelled) return;
+
+        const users = userSnapshot.docs.map((item) => ({
+          id: item.id,
+          name: item.data().name || item.data().email || item.id,
+          email: item.data().email || '',
+          role: item.data().role as Role
+        }));
+        const groupDocs = Array.isArray(groupSnapshot) ? groupSnapshot.filter((item) => item.exists()) : groupSnapshot.docs;
+        const groups: DirectoryGroup[] = groupDocs.map((item) => ({
+          id: item.id,
+          name: `${item.data().subject || 'Group'} · ${item.data().level || ''}`,
+          studentIds: item.data().studentIds || []
+        }));
+        const parentGroups = new Map<string, DirectoryGroup>();
+        if (role === 'parent' && Array.isArray(studentSnapshot)) {
+          studentSnapshot.filter((item) => item.exists()).forEach((item) => {
+            (item.data()?.groupMemberships || []).forEach((membership: { groupId: string; subject?: string; level?: string }) => {
+              const current = parentGroups.get(membership.groupId) || { id: membership.groupId, name: `${membership.subject || 'Group'} · ${membership.level || ''}`, studentIds: [] };
+              parentGroups.set(membership.groupId, { ...current, studentIds: [...new Set([...current.studentIds, item.id])] });
+            });
+          });
+        }
+        const accessibleGroups: DirectoryGroup[] = role === 'teacher'
+          ? groups.filter((group) => assignedGroupIds.includes(group.id))
+          : role === 'parent' ? [...parentGroups.values()] : groups;
+        let studentDocs = Array.isArray(studentSnapshot) ? studentSnapshot.filter((item) => item.exists()) : [];
+        if (role === 'teacher') {
+          const studentIds = [...new Set(accessibleGroups.flatMap((group) => group.studentIds))];
+          studentDocs = (await Promise.all(studentIds.map((studentId) => getDoc(doc(db, 'students', studentId))))).filter((item) => item.exists());
+        }
+        const directoryStudents = studentDocs.map((item) => ({ id: item.id, name: item.data()?.name || item.id, parentIds: item.data()?.parentIds || [] }));
+        setAvailableStudents(directoryStudents);
+        const accessibleStudentIds = role === 'parent'
+          ? linkedChildIds
+          : role === 'teacher'
+            ? [...new Set(accessibleGroups.flatMap((group) => group.studentIds))]
+            : directoryStudents.map((item) => item.id);
+        const assignmentSnapshots = role === 'admin'
+          ? [await getDocs(collection(db, 'assignments'))]
+          : await Promise.all(accessibleGroups.map((group) => getDocs(query(collection(db, 'assignments'), where('groupId', '==', group.id)))));
+        const accessibleAssignments = assignmentSnapshots.flatMap((snapshot) => snapshot.docs).filter((item) => {
+          const data = item.data();
+          return role === 'admin' || (role === 'teacher' ? assignedGroupIds.includes(data.groupId) : accessibleStudentIds.includes(data.studentId) || accessibleGroups.some((group) => group.id === data.groupId));
+        });
+
+        setDashboardCounts({
+          students: role === 'parent' ? linkedChildIds.length : accessibleStudentIds.length,
+          teachers: users.filter((item) => item.role === 'teacher').length,
+          groups: accessibleGroups.length,
+          unreadMessages: messageSnapshot.docs.filter((item) => item.data().unreadFor?.includes(user.uid) || (item.data().unread === true && item.data().senderId !== user.uid)).length,
+          unreadAssignments: accessibleAssignments.filter((item) => item.data().unread === true).length
+        });
+        setAvailableUsers(users.filter((item) => item.id !== user.uid && item.role));
+        setAvailableGroups(accessibleGroups);
+      } catch {
+        if (!cancelled) setDashboardCounts({ students: 0, teachers: 0, groups: 0, unreadMessages: 0, unreadAssignments: 0 });
+      }
+    };
+
+    void loadDashboardData();
+    return () => { cancelled = true; };
+  }, [assignedGroupIds, linkedChildIds, profileStatus, role, user]);
 
   const handleAuthentication = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -298,7 +330,7 @@ function App() {
         await setDoc(doc(db, 'users', credential.user.uid), {
           uid: credential.user.uid,
           email,
-          name: email.split('@')[0],
+          name: signupName.trim(),
           role: 'parent',
           status: 'pending',
           language: locale,
@@ -309,8 +341,8 @@ function App() {
       }
       setEmail('');
       setPassword('');
+      setSignupName('');
       setSignupStudentName('');
-      setAuthEntry('choice');
       setAuthMode('login');
       if (authMode === 'signup') setAuthError(t.accountCreated);
       setIsLoginOpen(false);
@@ -322,15 +354,14 @@ function App() {
   };
 
   const signOut = () => {
-    setDemoUser(null);
     setUser(null);
-    localStorage.removeItem('badr-school-demo-user');
     void auth.signOut();
   };
 
   useEffect(() => {
     document.documentElement.lang = locale;
     document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
+    document.title = translations[locale].appTitle;
     localStorage.setItem('badr-school-locale', locale);
   }, [locale]);
 
@@ -394,13 +425,18 @@ function App() {
           snapshots = [await getDocs(query(collection(db, 'messages'), where('participants', 'array-contains', user.uid)))];
         } else {
           const collectionName = activeSection === 'assignments' ? 'assignments' : 'attendance';
-          const identifiers = role === 'parent' ? linkedChildIds : assignedGroupIds;
+          let identifiers = role === 'parent' ? linkedChildIds : assignedGroupIds;
+          let field = role === 'parent' ? 'studentId' : 'groupId';
+          if (role === 'parent' && activeSection === 'assignments') {
+            const childSnapshots = await Promise.all(linkedChildIds.map((studentId) => getDoc(doc(db, 'students', studentId))));
+            identifiers = [...new Set(childSnapshots.flatMap((snapshot) => (snapshot.data()?.groupMemberships || []).map((membership: { groupId: string }) => membership.groupId)))];
+            field = 'groupId';
+          }
           snapshots = role === 'admin'
             ? [await getDocs(collection(db, collectionName))]
             : identifiers.length === 0
             ? []
             : await Promise.all(identifiers.map((identifier) => {
-              const field = role === 'parent' ? 'studentId' : 'groupId';
               return getDocs(query(collection(db, collectionName), where(field, '==', identifier)));
             }));
         }
@@ -413,7 +449,7 @@ function App() {
             : activeSection === 'messages'
               ? `${data.senderName || data.senderId || 'Message'} · ${data.text || data.body || ''}`
               : activeSection === 'assignments'
-                ? `${data.title || 'Assignment'} · Due ${data.dueDate || 'date not set'}`
+                ? `${data.title || 'Assignment'} · ${data.description || ''} · Due ${data.dueDate || 'date not set'}`
                 : `${data.date || 'Attendance'} · ${data.status || data.attendanceStatus || 'recorded'}`;
           return { id: item.id, text };
         }));
@@ -442,6 +478,9 @@ function App() {
   useEffect(() => {
     if (!user || profileStatus !== 'active' || activeSection !== 'attendance') return;
     if (role === 'teacher' && attendanceGroupId) {
+      setAttendanceStudents([]);
+      setAttendedStudentIds([]);
+      setLateStudentIds([]);
       void getDoc(doc(db, 'groups', attendanceGroupId)).then(async (groupSnapshot) => {
         const studentIds = groupSnapshot.data()?.studentIds || [];
         const studentSnapshots = await Promise.all(studentIds.map((studentId: string) => getDoc(doc(db, 'students', studentId))));
@@ -573,6 +612,7 @@ function App() {
         title: assignmentTitle.trim(),
         description: assignmentDescription.trim(),
         dueDate: assignmentDueDate,
+        unread: true,
         createdAt: new Date().toISOString()
       });
       setAssignmentTitle('');
@@ -589,16 +629,26 @@ function App() {
 
   const sendMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!user || profileStatus !== 'active' || !recipientUid.trim() || !messageText.trim()) return;
+    if (!user || profileStatus !== 'active' || !messageText.trim()) return;
     try {
-      await addDoc(collection(db, 'messages'), {
-        participants: [user.uid, recipientUid.trim()],
+      let recipientIds: string[] = [];
+      if (recipientType === 'everyone') recipientIds = availableUsers.map((item) => item.id);
+      if (recipientType === 'teacher' || recipientType === 'parent' || recipientType === 'individual' || recipientType === 'admin') recipientIds = recipientUid ? [recipientUid] : [];
+      if (recipientType === 'group' && recipientGroupId) {
+        const group = availableGroups.find((item) => item.id === recipientGroupId);
+        const parentIds = availableStudents.filter((student) => group?.studentIds.includes(student.id)).flatMap((student) => student.parentIds || []);
+        recipientIds = role === 'admin' ? [...new Set([...parentIds, ...availableUsers.filter((item) => item.role === 'teacher').map((item) => item.id)])] : parentIds;
+      }
+      if (recipientIds.length === 0) return;
+      await Promise.all([...new Set(recipientIds)].map((recipientId) => addDoc(collection(db, 'messages'), {
+        participants: [user.uid, recipientId],
         senderId: user.uid,
         senderName: profileName || user.email || 'User',
         text: messageText.trim(),
         unread: true,
+        unreadFor: [recipientId],
         createdAt: new Date().toISOString()
-      });
+      })));
       setMessageText('');
       setMessageStatus(t.messageSent);
       setLiveItems((current) => ({ ...current, messages: undefined }));
@@ -661,9 +711,15 @@ function App() {
 
   const t = useMemo(() => translations[locale], [locale]);
   const sectionItems = liveItems[activeSection];
-  const detailItems = sectionItems && sectionItems.length > 0
+  const dashboardItems = [
+    `${dashboardCounts.unreadMessages} ${t.unreadMessages}`,
+    `${dashboardCounts.unreadAssignments} ${t.unreadAssignments}`
+  ];
+  const detailItems = activeSection === 'dashboard'
+    ? dashboardItems
+    : sectionItems && sectionItems.length > 0
     ? sectionItems.map((item) => item.text)
-    : demoContent[activeSection].items;
+    : [];
 
   return (
     <div className="app-shell" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
@@ -683,15 +739,11 @@ function App() {
             </select>
           </label>
 
-          {user || demoUser ? (
-            <button type="button" onClick={signOut}>{t.logout}</button>
-          ) : (
-            <button type="button" onClick={() => setIsLoginOpen(true)}>{t.login}</button>
-          )}
+          {user && <button type="button" onClick={signOut}>{t.logout}</button>}
         </div>
       </header>
 
-      <main className="content">
+      {user ? <main className="content">
         <aside className="sidebar">
           <div className="status-box">
             <span className="dot" />
@@ -719,13 +771,14 @@ function App() {
           <div className="hero-card">
             <div>
               <span className="badge">{t[role]}</span>
-              <h2>{user?.email || demoUser?.email || t.pending}</h2>
+              <h2>{profileName || user.email}</h2>
+              <p>{user.email}</p>
               <p>{t.note}</p>
             </div>
             <div className="metrics">
-              <div><strong>6</strong><span>Teachers</span></div>
-              <div><strong>50</strong><span>Students</span></div>
-              <div><strong>7</strong><span>Groups</span></div>
+              <div><strong>{dashboardCounts.teachers}</strong><span>{t.teachers}</span></div>
+              <div><strong>{dashboardCounts.students}</strong><span>{t.students}</span></div>
+              <div><strong>{dashboardCounts.groups}</strong><span>{t.groups}</span></div>
             </div>
           </div>
 
@@ -734,19 +787,19 @@ function App() {
               <span className="eyebrow">{t.selected}</span>
               <h2>{t[activeSection]}</h2>
             </div>
-            <span className="muted">{user || demoUser ? t.signedInAs : t.pending}</span>
+            <span className="muted">{t.signedInAs}</span>
           </div>
 
           <article className="detail-card">
             <div className="detail-card-heading">
               <div>
                 <span className="eyebrow">{t[activeSection]}</span>
-                <h3>{demoContent[activeSection].title}{isLoadingData ? ' · Loading' : ''}</h3>
+                <h3>{t[activeSection]}{isLoadingData ? ' · Loading' : ''}</h3>
               </div>
               <span className="count-badge">{detailItems.length}</span>
             </div>
             <ul className="activity-list">
-              {detailItems.map((item) => (
+              {detailItems.length === 0 ? <li><span className="muted">{t.noRecords}</span></li> : detailItems.map((item) => (
                 <li key={item}>
                   <span className="activity-dot" />
                   <span>{item}</span>
@@ -789,7 +842,12 @@ function App() {
               <span className="eyebrow">{t[role]}</span>
               <h3>{t.sendMessage}</h3>
               <form className="message-form" onSubmit={sendMessage}>
-                <label>{t.recipientUid}<input value={recipientUid} onChange={(event) => setRecipientUid(event.target.value)} placeholder="Firebase user ID" required /></label>
+                <label>{t.recipientType}<select value={recipientType} onChange={(event) => { setRecipientType(event.target.value as typeof recipientType); setRecipientUid(''); setRecipientGroupId(''); }}>
+                  {role === 'admin' && <><option value="everyone">{t.everyone}</option><option value="group">{t.groupRecipient}</option><option value="teacher">{t.teacherRecipient}</option><option value="parent">{t.parentRecipient}</option></>}
+                  {role === 'teacher' && <><option value="group">{t.groupRecipient}</option><option value="individual">{t.individualRecipient}</option></>}
+                  {role === 'parent' && <><option value="teacher">{t.teacherRecipient}</option><option value="admin">{t.admin}</option></>}
+                </select></label>
+                {recipientType === 'group' ? <label>{t.recipient}<select value={recipientGroupId} onChange={(event) => setRecipientGroupId(event.target.value)} required><option value="">{t.selectRecipient}</option>{availableGroups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label> : recipientType !== 'everyone' && <label>{t.recipient}<select value={recipientUid} onChange={(event) => setRecipientUid(event.target.value)} required><option value="">{t.selectRecipient}</option>{recipientType === 'individual' ? availableStudents.flatMap((student) => (student.parentIds || []).map((parentId) => { const parent = availableUsers.find((item) => item.id === parentId); return parent ? <option key={`${student.id}-${parentId}`} value={parentId}>{student.name} · {parent.name}</option> : null; })) : availableUsers.filter((item) => recipientType === 'teacher' ? item.role === 'teacher' : recipientType === 'admin' ? item.role === 'admin' : item.role === 'parent').map((recipient) => <option key={recipient.id} value={recipient.id}>{recipient.name} · {recipient.email}</option>)}</select></label>}
                 <label>{t.messageText}<textarea value={messageText} onChange={(event) => setMessageText(event.target.value)} rows={4} required /></label>
                 <button className="primary-action" type="submit">{t.sendMessage}</button>
               </form>
@@ -892,9 +950,8 @@ function App() {
               <h3>{t.messages}</h3>
               <button className="card-action" type="button" onClick={() => setActiveSection('messages')}>{t.open}</button>
               <ul>
-                <li>Parent message thread</li>
-                <li>Teacher reply queue</li>
-                <li>Admin broadcast</li>
+                <li>{dashboardCounts.unreadMessages} {t.unreadMessages}</li>
+                <li>{t.messageText}</li>
               </ul>
             </article>
 
@@ -912,9 +969,9 @@ function App() {
               <h3>{t.assignments}</h3>
               <button className="card-action" type="button" onClick={() => setActiveSection('assignments')}>{t.open}</button>
               <ul>
-                <li>Text-only homework</li>
-                <li>Due date tracking</li>
-                <li>Memorization progress</li>
+                <li>{dashboardCounts.unreadAssignments} {t.unreadAssignments}</li>
+                <li>{t.dueDate}</li>
+                <li>{t.description}</li>
               </ul>
             </article>
 
@@ -930,37 +987,40 @@ function App() {
             </>
           )}
         </section>
-      </main>
+      </main> : <main className="welcome-screen">
+        <div className="welcome-copy">
+          <span className="eyebrow">Badr Mosque School</span>
+          <h2>{t.welcomeTitle}</h2>
+          <p>{t.welcomeText}</p>
+          <div className="welcome-actions">
+            <button className="primary-action" type="button" onClick={() => { setAuthMode('login'); setIsLoginOpen(true); }}>{t.loginButton}</button>
+            <button className="secondary-action" type="button" onClick={() => { setAuthMode('signup'); setIsLoginOpen(true); }}>{t.signupButton}</button>
+          </div>
+        </div>
+      </main>}
 
       {isLoginOpen && (
         <div className="modal-backdrop" role="presentation" onClick={() => setIsLoginOpen(false)}>
           <div className="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title" onClick={(event) => event.stopPropagation()}>
             <button className="modal-close" type="button" aria-label={t.close} onClick={() => setIsLoginOpen(false)}>×</button>
-            <span className="eyebrow">{t.login}</span>
+            <span className="eyebrow">{authMode === 'login' ? t.loginButton : t.signupButton}</span>
             <h2 id="login-title">{t.appTitle}</h2>
-            {authEntry === 'choice' ? (
-              <div className="auth-choice">
-                <p>{t.loginHint}</p>
-                <button className="primary-action" type="button" onClick={() => { setAuthMode('login'); setAuthEntry('form'); }}>{t.loginButton}</button>
-                <button className="secondary-action" type="button" onClick={() => { setAuthMode('signup'); setAuthEntry('form'); }}>{t.signupButton}</button>
-              </div>
-            ) : (
-              <>
+            <>
                 <p>{authMode === 'login' ? t.loginHint : t.signupNote}</p>
                 <form className="auth-form" onSubmit={handleAuthentication}>
                   {authMode === 'signup' && (
-                    <label>{t.studentName}<input value={signupStudentName} onChange={(event) => setSignupStudentName(event.target.value)} required /></label>
+                    <>
+                      <label>{t.name}<input value={signupName} onChange={(event) => setSignupName(event.target.value)} required /></label>
+                      <label>{t.studentName}<input value={signupStudentName} onChange={(event) => setSignupStudentName(event.target.value)} required /></label>
+                    </>
                   )}
                   <label>{t.email}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>
                   <label>{t.password}<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} autoComplete={authMode === 'login' ? 'current-password' : 'new-password'} /></label>
                   {authError && <p className="auth-error" role="alert">{authError}</p>}
                   <button className="primary-action" type="submit" disabled={isAuthenticating}>{isAuthenticating ? '...' : authMode === 'login' ? t.signIn : t.createAccount}</button>
                 </form>
-                <button className="text-action" type="button" onClick={() => setAuthEntry('choice')}>{t.close}</button>
+                <button className="text-action" type="button" onClick={() => setIsLoginOpen(false)}>{t.close}</button>
               </>
-            )}
-            <div className="demo-divider"><span>{t.demoLogin}</span></div>
-            <div className="demo-roles">{(['parent', 'teacher', 'admin'] as Role[]).map((demoRole) => <button type="button" key={demoRole} onClick={() => signInDemo(demoRole)}><strong>{t[demoRole]}</strong><span>{t.demoLogin}</span></button>)}</div>
           </div>
         </div>
       )}
