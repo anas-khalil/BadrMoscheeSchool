@@ -208,13 +208,13 @@ function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [authEntry, setAuthEntry] = useState<'choice' | 'form'>('choice');
-  const [signupRole, setSignupRole] = useState<Role>('parent');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [signupStudentName, setSignupStudentName] = useState('');
   const [authError, setAuthError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [profileStatus, setProfileStatus] = useState<'pending' | 'active' | null>(null);
+  const [profileName, setProfileName] = useState('');
   const [pendingParents, setPendingParents] = useState<Array<{ id: string; email: string; name: string; role: Role; childId: string; requestedChildName: string }>>([]);
   const [approvalMessage, setApprovalMessage] = useState('');
   const [linkedChildIds, setLinkedChildIds] = useState<string[]>([]);
@@ -249,8 +249,12 @@ function App() {
   const [availableTeachers, setAvailableTeachers] = useState<DirectoryUser[]>([]);
   const [availableStudents, setAvailableStudents] = useState<DirectoryStudent[]>([]);
   const [demoUser, setDemoUser] = useState<DemoUser | null>(() => {
-    const saved = localStorage.getItem('badr-school-demo-user');
-    return saved ? JSON.parse(saved) as DemoUser : null;
+    try {
+      const saved = localStorage.getItem('badr-school-demo-user');
+      return saved ? JSON.parse(saved) as DemoUser : null;
+    } catch {
+      return null;
+    }
   });
 
   useEffect(() => {
@@ -287,17 +291,19 @@ function App() {
       if (authMode === 'login') {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
+        // Self-signup only ever creates a pending PARENT account. Teacher and
+        // admin accounts are created/promoted by an existing admin (the very
+        // first admin is bootstrapped manually in Firebase, per the README).
         const credential = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db, 'users', credential.user.uid), {
           uid: credential.user.uid,
           email,
           name: email.split('@')[0],
-          role: signupRole,
+          role: 'parent',
           status: 'pending',
           language: locale,
-          ...(signupRole === 'parent' ? { linkedChildIds: [] } : {}),
-          ...(signupRole === 'parent' ? { requestedChildName: signupStudentName.trim() } : {}),
-          ...(signupRole === 'teacher' ? { assignedGroupIds: [] } : {}),
+          linkedChildIds: [],
+          requestedChildName: signupStudentName.trim(),
           createdAt: new Date().toISOString()
         });
       }
@@ -341,6 +347,7 @@ function App() {
         const nextRole = profile?.role || (currentUser.email?.includes('teacher') ? 'teacher' : currentUser.email?.includes('admin') ? 'admin' : 'parent');
         setRole(nextRole as Role);
         setProfileStatus(profile?.status === 'active' ? 'active' : 'pending');
+        setProfileName(profile?.name || '');
         setLinkedChildIds(profile?.linkedChildIds || []);
         setAssignedGroupIds(profile?.assignedGroupIds || []);
 
@@ -587,6 +594,7 @@ function App() {
       await addDoc(collection(db, 'messages'), {
         participants: [user.uid, recipientUid.trim()],
         senderId: user.uid,
+        senderName: profileName || user.email || 'User',
         text: messageText.trim(),
         unread: true,
         createdAt: new Date().toISOString()
@@ -941,10 +949,7 @@ function App() {
                 <p>{authMode === 'login' ? t.loginHint : t.signupNote}</p>
                 <form className="auth-form" onSubmit={handleAuthentication}>
                   {authMode === 'signup' && (
-                    <>
-                      <label>{t.accountType}<select value={signupRole} onChange={(event) => setSignupRole(event.target.value as Role)}><option value="parent">{t.parent}</option><option value="teacher">{t.teacher}</option><option value="admin">{t.admin}</option></select></label>
-                      {signupRole === 'parent' && <label>{t.studentName}<input value={signupStudentName} onChange={(event) => setSignupStudentName(event.target.value)} required /></label>}
-                    </>
+                    <label>{t.studentName}<input value={signupStudentName} onChange={(event) => setSignupStudentName(event.target.value)} required /></label>
                   )}
                   <label>{t.email}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>
                   <label>{t.password}<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} autoComplete={authMode === 'login' ? 'current-password' : 'new-password'} /></label>
