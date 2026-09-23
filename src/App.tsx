@@ -1220,7 +1220,7 @@ function App() {
                 <form className="auth-form" onSubmit={handleAuthentication}>
                   {authMode === 'signup' && (
                     <>
-                      <label>{t.accountType}<select value={signupRole} onChange={(event) => setSignupRole(event.target.value as Role)}><option value="parent">{t.parent}</option><option value="teacher">{t.teacher}</option><option value="admin">{t.admin}</option></select></label>
+                      <label>{t.accountType}<select value={signupRole} onChange={(event) => setSignupRole(event.target.value as Role)}><option value="parent">{t.parent}</option><option value="teacher">{t.teacher}</option></select></label>
                       <label>{t.name}<input value={signupName} onChange={(event) => setSignupName(event.target.value)} required /></label>
                       {signupRole === 'parent' && <label>{t.studentName}<input value={signupStudentName} onChange={(event) => setSignupStudentName(event.target.value)} required /></label>}
                     </>

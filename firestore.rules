@@ -53,16 +53,16 @@ service cloud.firestore {
       // deliberately-minimal collection instead of loosening this rule.
       allow read: if isSignedIn() && (userId == request.auth.uid || isAdmin());
 
-      // Self-signup may ONLY create a pending PARENT account. Teacher/admin
-      // accounts must be created or promoted by an existing admin (the very
-      // first admin is bootstrapped manually in Firebase Console, per the
-      // README). isAdmin()/isTeacher() do not check `status`, so allowing
-      // role in ['admin','teacher'] here would grant those privileges the
-      // instant the document is created, regardless of status — do not
-      // reintroduce that.
+      // Self-signup may create a pending PARENT or TEACHER account only.
+      // Admin accounts must be created or promoted by an existing admin (the
+      // very first admin is bootstrapped manually in Firebase Console, per
+      // the README). isAdmin()/isTeacher() do not grant anything until
+      // `status` is flipped to 'active' by an admin, so allowing 'teacher'
+      // here does not grant teacher privileges at signup time — do not
+      // add 'admin' to this list.
       allow create: if isAdmin()
         || (isSignedIn() && userId == request.auth.uid
-            && request.resource.data.role == 'parent'
+            && request.resource.data.role in ['parent', 'teacher']
             && request.resource.data.status == 'pending');
 
       // A user may edit their own profile (e.g. name/language), but can
