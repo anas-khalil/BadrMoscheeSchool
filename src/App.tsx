@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
-import { createUserWithEmailAndPassword, getAuth, onAuthStateChanged, signInWithEmailAndPassword, type User } from 'firebase/auth';
-import { addDoc, arrayUnion, collection, doc, getDoc, getDocs, getFirestore, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, deleteUser, getAuth, onAuthStateChanged, signInWithEmailAndPassword, type User } from 'firebase/auth';
+import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { registerSW } from 'virtual:pwa-register';
 
 const firebaseConfig = {
@@ -17,10 +17,33 @@ const firebaseApp = getApps().length ? getApps()[0] : initializeApp(firebaseConf
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 
+// A single denied/missing doc must not blank out the rest of a batch fetch.
+async function getExistingDocs(collectionName: string, ids: string[]) {
+  const settled = await Promise.allSettled(ids.map((id) => getDoc(doc(db, collectionName, id))));
+  return settled.flatMap((result) => result.status === 'fulfilled' && result.value.exists() ? [result.value] : []);
+}
+
+// Groups attendance docs by group, then by day, so the UI can drill down group -> day -> student.
+function buildGroupAttendance(groups: Array<{ id: string; name: string }>, records: Array<{ groupId?: string; studentId?: string; date?: string; status?: string }>, studentNameById: Map<string, string>) {
+  return groups.map((group) => {
+    const groupRecords = records.filter((record) => record.groupId === group.id);
+    const byDate = new Map<string, { date: string; present: number; total: number; records: { studentId: string; studentName: string; status: string }[] }>();
+    groupRecords.forEach((record) => {
+      const date = record.date || '';
+      const day = byDate.get(date) || { date, present: 0, total: 0, records: [] };
+      day.total += 1;
+      if (record.status === 'present' || record.status === 'late') day.present += 1;
+      day.records.push({ studentId: record.studentId || '', studentName: studentNameById.get(record.studentId || '') || record.studentId || '', status: record.status || 'absent' });
+      byDate.set(date, day);
+    });
+    return { groupId: group.id, groupName: group.name, days: [...byDate.values()].sort((a, b) => b.date.localeCompare(a.date)) };
+  });
+}
+
 type Locale = 'en' | 'de' | 'ar';
 
 type Role = 'admin' | 'teacher' | 'parent';
-type Section = 'dashboard' | 'calendar' | 'messages' | 'attendance' | 'assignments' | 'privacy' | 'approvals' | 'groups';
+type Section = 'dashboard' | 'calendar' | 'messages' | 'attendance' | 'assignments' | 'approvals' | 'groups';
 
 type LiveItem = {
   id: string;
@@ -50,14 +73,12 @@ type AttendanceStudent = DirectoryStudent & {
   status?: 'present' | 'absent' | 'late';
 };
 
-type AttendanceSummary = {
-  groupId: string;
-  groupName: string;
-  sessions: number;
-  present: number;
-  total: number;
-  students: Array<AttendanceStudent & { date: string; history: Array<{ date: string; status: string }> }>;
-};
+type AttendanceDayRecord = { studentId: string; studentName: string; status: string };
+type AttendanceDay = { date: string; present: number; total: number; records: AttendanceDayRecord[] };
+type GroupAttendance = { groupId: string; groupName: string; days: AttendanceDay[] };
+type ParentAttendanceEntry = { studentId: string; studentName: string; days: Array<{ date: string; status: string }> };
+
+type MessageRecord = { id: string; senderId: string; senderName: string; text: string; sentAt: string; createdAt: string };
 
 const translations: Record<Locale, Record<string, string>> = {
   en: {
@@ -70,7 +91,7 @@ const translations: Record<Locale, Record<string, string>> = {
     messages: 'Messages',
     attendance: 'Attendance',
     assignments: 'Assignments',
-    privacy: 'Privacy Notice',
+    privacy: '',
     login: 'Login',
     logout: 'Logout',
     language: 'Language',
@@ -93,7 +114,7 @@ const translations: Record<Locale, Record<string, string>> = {
     switchToLogin: 'Already registered? Sign in',
     authError: 'Unable to complete authentication. Check your details and try again.',
     pendingNote: 'Your account is pending admin approval.'
-    ,approvals: 'Approvals', groups: 'Groups', pendingParents: 'Pending parent accounts', approve: 'Approve', approved: 'Parent approved', approvalError: 'Could not update this account.', eventTitle: 'Event title', eventDate: 'Event date', eventAudience: 'Audience', allSchool: 'Everyone', createEvent: 'Create event', eventCreated: 'Event created.', group: 'Group', studentId: 'Student ID', studentName: 'Student name', assignmentTitle: 'Assignment title', description: 'Description', dueDate: 'Due date', createAssignment: 'Post assignment', assignmentCreated: 'Assignment posted', attendanceStatus: 'Status', present: 'Present', absent: 'Absent', late: 'Late', saveAttendance: 'Save attendance', attendanceSaved: 'Attendance saved', loginButton: 'Login', signupButton: 'Sign up', chooseAccountType: 'Choose account type', accountType: 'Account type', signupNote: 'All new accounts require admin approval.', accountCreated: 'Account created. Please wait for admin approval.', groupId: 'Group ID', subject: 'Subject', level: 'Level', teacherUid: 'Teacher UID', studentIds: 'Students', schedule: 'Weekly schedule', createGroup: 'Create group', groupCreated: 'Group created and assigned.', attended: 'Attended', markAttendance: 'Mark Saturday attendance', attendanceDate: 'Session date', attendanceSummary: 'Attendance summary', attendanceRate: 'Attendance rate', viewHistory: 'View student history', history: 'History', noAttendanceData: 'No attendance data yet.', saturdayOnly: 'Please choose a Saturday.', messageText: 'Message', sendMessage: 'Send message', noRecords: 'No records yet.'
+    ,approvals: 'Approvals', groups: 'Groups', pendingParents: 'Pending parent accounts', approve: 'Approve', approved: 'Parent approved', approvalError: 'Could not update this account.', eventTitle: 'Event title', eventDate: 'Event date', eventAudience: 'Audience', allSchool: 'Everyone', createEvent: 'Create event', eventCreated: 'Event created.', group: 'Group', studentId: 'Student ID', studentName: 'Student name', assignmentTitle: 'Assignment title', description: 'Description', dueDate: 'Due date', createAssignment: 'Post assignment', assignmentCreated: 'Assignment posted', attendanceStatus: 'Status', present: 'Present', absent: 'Absent', late: 'Late', saveAttendance: 'Save attendance', attendanceSaved: 'Attendance saved', loginButton: 'Login', signupButton: 'Sign up', chooseAccountType: 'Choose account type', accountType: 'Account type', signupNote: 'All new accounts require admin approval.', accountCreated: 'Account created. Please wait for admin approval.', groupId: 'Group ID', subject: 'Subject', level: 'Level', teacherUid: 'Teacher UID', studentIds: 'Students', schedule: 'Weekly schedule', createGroup: 'Create group', groupCreated: 'Group created and assigned.', attended: 'Attended', markAttendance: 'Mark Saturday attendance', attendanceDate: 'Session date', attendanceSummary: 'Attendance summary', attendanceRate: 'Attendance rate', viewHistory: 'View student history', history: 'History', noAttendanceData: 'No attendance data yet.', saturdayOnly: 'Please choose a Saturday.', messageText: 'Message', sendMessage: 'Send message', noRecords: 'No records yet.', existingGroups: 'Existing groups', noGroups: 'No groups created yet.', edit: 'Edit', deleteAction: 'Delete', updateGroup: 'Update group', groupUpdated: 'Group updated.', groupDeleted: 'Group deleted.', cancelEdit: 'Cancel edit', confirmDeleteGroup: 'Delete this group? This cannot be undone.', sentOn: 'Sent', inbox: 'Inbox', sent: 'Sent', back: 'Back'
     ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child', name: 'Full name', students: 'Students', teachers: 'Teachers', unreadMessages: 'Unread messages', unreadAssignments: 'Unread assignments', recipientType: 'Send to', everyone: 'Everyone', groupRecipient: 'Group', teacherRecipient: 'Teacher', parentRecipient: 'Parent', individualRecipient: 'Individual parent', recipient: 'Recipient', selectRecipient: 'Select recipient', messageSent: 'Message sent.'
   },
   de: {
@@ -106,7 +127,7 @@ const translations: Record<Locale, Record<string, string>> = {
     messages: 'Nachrichten',
     attendance: 'Anwesenheit',
     assignments: 'Aufgaben',
-    privacy: 'Datenschutzhinweis',
+    privacy: '',
     login: 'Anmelden',
     logout: 'Abmelden',
     language: 'Sprache',
@@ -130,7 +151,7 @@ const translations: Record<Locale, Record<string, string>> = {
     authError: 'Anmeldung nicht möglich. Bitte Daten prüfen und erneut versuchen.',
     pendingNote: 'Ihr Konto wartet auf die Genehmigung durch die Verwaltung.'
     ,approvals: 'Genehmigungen', groups: 'Gruppen', pendingParents: 'Ausstehende Elternkonten', approve: 'Genehmigen', approved: 'Elternkonto genehmigt', approvalError: 'Konto konnte nicht aktualisiert werden.', eventTitle: 'Veranstaltungstitel', eventDate: 'Veranstaltungsdatum', eventAudience: 'Zielgruppe', allSchool: 'Alle', createEvent: 'Veranstaltung erstellen', eventCreated: 'Veranstaltung erstellt.', group: 'Gruppe', studentId: 'Schüler-ID', studentName: 'Name des Schülers', assignmentTitle: 'Aufgabentitel', description: 'Beschreibung', dueDate: 'Fälligkeitsdatum', createAssignment: 'Aufgabe veröffentlichen', assignmentCreated: 'Aufgabe veröffentlicht', attendanceStatus: 'Status', present: 'Anwesend', absent: 'Abwesend', late: 'Verspätet', saveAttendance: 'Anwesenheit speichern', attendanceSaved: 'Anwesenheit gespeichert', loginButton: 'Anmelden', signupButton: 'Registrieren', chooseAccountType: 'Kontotyp auswählen', accountType: 'Kontotyp', signupNote: 'Alle neuen Konten benötigen eine Genehmigung.', accountCreated: 'Konto erstellt. Bitte warten Sie auf die Genehmigung.', groupId: 'Gruppen-ID', subject: 'Fach', level: 'Stufe', teacherUid: 'Lehrer-UID', studentIds: 'Schüler', schedule: 'Wochenplan', createGroup: 'Gruppe erstellen', groupCreated: 'Gruppe erstellt und zugewiesen.', attended: 'Anwesend', markAttendance: 'Samstagsanwesenheit erfassen', attendanceDate: 'Unterrichtsdatum', attendanceSummary: 'Anwesenheitsübersicht', attendanceRate: 'Anwesenheitsquote', viewHistory: 'Schülerverlauf anzeigen', history: 'Verlauf', noAttendanceData: 'Noch keine Anwesenheitsdaten.', saturdayOnly: 'Bitte wählen Sie einen Samstag.'
-    ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name', students: 'Schüler', teachers: 'Lehrer', unreadMessages: 'Ungelesene Nachrichten', unreadAssignments: 'Ungelesene Aufgaben', recipientType: 'Senden an', everyone: 'Alle', groupRecipient: 'Gruppe', teacherRecipient: 'Lehrer', parentRecipient: 'Elternteil', individualRecipient: 'Einzelnen Elternteil', recipient: 'Empfänger', selectRecipient: 'Empfänger auswählen', messageSent: 'Nachricht gesendet.', noRecords: 'Noch keine Einträge.'
+    ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name', students: 'Schüler', teachers: 'Lehrer', unreadMessages: 'Ungelesene Nachrichten', unreadAssignments: 'Ungelesene Aufgaben', recipientType: 'Senden an', everyone: 'Alle', groupRecipient: 'Gruppe', teacherRecipient: 'Lehrer', parentRecipient: 'Elternteil', individualRecipient: 'Einzelnen Elternteil', recipient: 'Empfänger', selectRecipient: 'Empfänger auswählen', messageSent: 'Nachricht gesendet.', noRecords: 'Noch keine Einträge.', existingGroups: 'Bestehende Gruppen', noGroups: 'Noch keine Gruppen erstellt.', edit: 'Bearbeiten', deleteAction: 'Löschen', updateGroup: 'Gruppe aktualisieren', groupUpdated: 'Gruppe aktualisiert.', groupDeleted: 'Gruppe gelöscht.', cancelEdit: 'Bearbeitung abbrechen', confirmDeleteGroup: 'Diese Gruppe löschen? Dies kann nicht rückgängig gemacht werden.', sentOn: 'Gesendet', inbox: 'Posteingang', sent: 'Gesendet', back: 'Zurück'
   },
   ar: {
     appTitle: 'المدرسة العربية بمسجد بدر',
@@ -142,7 +163,7 @@ const translations: Record<Locale, Record<string, string>> = {
     messages: 'الرسائل',
     attendance: 'الحضور',
     assignments: 'الواجبات',
-    privacy: 'إشعار الخصوصية',
+    privacy: '',
     login: 'تسجيل الدخول',
     logout: 'تسجيل الخروج',
     language: 'اللغة',
@@ -166,7 +187,7 @@ const translations: Record<Locale, Record<string, string>> = {
     authError: 'تعذر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.',
     pendingNote: 'حسابك بانتظار موافقة الإدارة.'
     ,approvals: 'الموافقات', groups: 'المجموعات', pendingParents: 'حسابات أولياء الأمور المعلقة', approve: 'موافقة', approved: 'تمت الموافقة على الحساب', approvalError: 'تعذر تحديث الحساب.', eventTitle: 'عنوان الفعالية', eventDate: 'تاريخ الفعالية', eventAudience: 'الجمهور', allSchool: 'الجميع', createEvent: 'إنشاء فعالية', eventCreated: 'تم إنشاء الفعالية.', group: 'المجموعة', studentId: 'معرف الطالب', studentName: 'اسم الطالب', assignmentTitle: 'عنوان الواجب', description: 'الوصف', dueDate: 'تاريخ التسليم', createAssignment: 'نشر الواجب', assignmentCreated: 'تم نشر الواجب', attendanceStatus: 'الحالة', present: 'حاضر', absent: 'غائب', late: 'متأخر', saveAttendance: 'حفظ الحضور', attendanceSaved: 'تم حفظ الحضور', loginButton: 'تسجيل الدخول', signupButton: 'إنشاء حساب', chooseAccountType: 'اختر نوع الحساب', accountType: 'نوع الحساب', signupNote: 'تحتاج جميع الحسابات الجديدة إلى موافقة الإدارة.', accountCreated: 'تم إنشاء الحساب. يرجى انتظار موافقة الإدارة.', groupId: 'معرف المجموعة', subject: 'المادة', level: 'المستوى', teacherUid: 'معرف المعلم', studentIds: 'الطلاب', schedule: 'الجدول الأسبوعي', createGroup: 'إنشاء مجموعة', groupCreated: 'تم إنشاء المجموعة وتعيينها.', attended: 'حاضر', markAttendance: 'تسجيل حضور السبت', attendanceDate: 'تاريخ الحصة', attendanceSummary: 'ملخص الحضور', attendanceRate: 'نسبة الحضور', viewHistory: 'عرض سجل الطالب', history: 'السجل', noAttendanceData: 'لا توجد بيانات حضور بعد.', saturdayOnly: 'يرجى اختيار يوم السبت.'
-    ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل', students: 'الطلاب', teachers: 'المعلمون', unreadMessages: 'الرسائل غير المقروءة', unreadAssignments: 'الواجبات غير المقروءة', recipientType: 'إرسال إلى', everyone: 'الجميع', groupRecipient: 'مجموعة', teacherRecipient: 'معلم', parentRecipient: 'ولي أمر', individualRecipient: 'ولي أمر محدد', recipient: 'المستلم', selectRecipient: 'اختر المستلم', messageSent: 'تم إرسال الرسالة.', noRecords: 'لا توجد سجلات بعد.'
+    ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل', students: 'الطلاب', teachers: 'المعلمون', unreadMessages: 'الرسائل غير المقروءة', unreadAssignments: 'الواجبات غير المقروءة', recipientType: 'إرسال إلى', everyone: 'الجميع', groupRecipient: 'مجموعة', teacherRecipient: 'معلم', parentRecipient: 'ولي أمر', individualRecipient: 'ولي أمر محدد', recipient: 'المستلم', selectRecipient: 'اختر المستلم', messageSent: 'تم إرسال الرسالة.', noRecords: 'لا توجد سجلات بعد.', existingGroups: 'المجموعات الحالية', noGroups: 'لم يتم إنشاء أي مجموعات بعد.', edit: 'تعديل', deleteAction: 'حذف', updateGroup: 'تحديث المجموعة', groupUpdated: 'تم تحديث المجموعة.', groupDeleted: 'تم حذف المجموعة.', cancelEdit: 'إلغاء التعديل', confirmDeleteGroup: 'حذف هذه المجموعة؟ لا يمكن التراجع عن هذا.', sentOn: 'أُرسل في', inbox: 'الوارد', sent: 'المرسلة', back: 'رجوع'
   }
 };
 
@@ -174,10 +195,10 @@ function App() {
   const [locale, setLocale] = useState<Locale>('en');
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<Role>('parent');
-  const [isOfflineReady, setIsOfflineReady] = useState(false);
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [signupRole, setSignupRole] = useState<Role>('parent');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [signupName, setSignupName] = useState('');
@@ -202,9 +223,14 @@ function App() {
   const [attendanceDate, setAttendanceDate] = useState('');
   const [attendanceGroupId, setAttendanceGroupId] = useState('');
   const [attendanceStudents, setAttendanceStudents] = useState<AttendanceStudent[]>([]);
+  const [attendanceGroupStudentCount, setAttendanceGroupStudentCount] = useState(0);
   const [attendedStudentIds, setAttendedStudentIds] = useState<string[]>([]);
   const [lateStudentIds, setLateStudentIds] = useState<string[]>([]);
-  const [attendanceSummaries, setAttendanceSummaries] = useState<AttendanceSummary[]>([]);
+  const [groupAttendance, setGroupAttendance] = useState<GroupAttendance[]>([]);
+  const [parentAttendance, setParentAttendance] = useState<ParentAttendanceEntry[]>([]);
+  const [attendanceViewGroupId, setAttendanceViewGroupId] = useState<string | null>(null);
+  const [attendanceViewDate, setAttendanceViewDate] = useState<string | null>(null);
+  const [messageRecords, setMessageRecords] = useState<MessageRecord[]>([]);
   const [teacherMessage, setTeacherMessage] = useState('');
   const [recipientType, setRecipientType] = useState<'everyone' | 'group' | 'teacher' | 'parent' | 'individual' | 'admin'>('teacher');
   const [recipientUid, setRecipientUid] = useState('');
@@ -224,16 +250,14 @@ function App() {
   const [availableUsers, setAvailableUsers] = useState<DirectoryUser[]>([]);
   const [availableGroups, setAvailableGroups] = useState<Array<{ id: string; name: string; studentIds: string[] }>>([]);
   const [dashboardCounts, setDashboardCounts] = useState({ students: 0, teachers: 0, groups: 0, unreadMessages: 0, unreadAssignments: 0 });
+  const [manageableGroups, setManageableGroups] = useState<Array<{ id: string; subject: string; level: string; teacherId: string; teacherName: string; studentIds: string[]; studentNames: string[]; schedule: string }>>([]);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
 
   useEffect(() => {
     const savedLocale = (localStorage.getItem('badr-school-locale') as Locale) || 'en';
     setLocale(savedLocale in translations ? savedLocale : 'en');
 
-    const updateSW = registerSW({
-      onOfflineReady() {
-        setIsOfflineReady(true);
-      }
-    });
+    const updateSW = registerSW();
 
     return () => updateSW && updateSW();
   }, []);
@@ -247,7 +271,11 @@ function App() {
         const [userSnapshot, groupSnapshot, studentSnapshot, messageSnapshot] = await Promise.all([
           getDocs(query(collection(db, 'users'), where('status', '==', 'active'))),
           role === 'admin' ? getDocs(collection(db, 'groups')) : Promise.all(assignedGroupIds.map((groupId) => getDoc(doc(db, 'groups', groupId)))),
-          role === 'admin' || role === 'parent' ? Promise.all((role === 'admin' ? [] : linkedChildIds).map((id) => getDoc(doc(db, 'students', id)))) : Promise.resolve([]),
+          role === 'admin'
+            ? getDocs(collection(db, 'students')).then((snapshot) => snapshot.docs)
+            : role === 'parent'
+              ? getExistingDocs('students', linkedChildIds)
+              : Promise.resolve([]),
           getDocs(query(collection(db, 'messages'), where('participants', 'array-contains', user.uid))),
         ]);
         if (cancelled) return;
@@ -279,7 +307,7 @@ function App() {
         let studentDocs = Array.isArray(studentSnapshot) ? studentSnapshot.filter((item) => item.exists()) : [];
         if (role === 'teacher') {
           const studentIds = [...new Set(accessibleGroups.flatMap((group) => group.studentIds))];
-          studentDocs = (await Promise.all(studentIds.map((studentId) => getDoc(doc(db, 'students', studentId))))).filter((item) => item.exists());
+          studentDocs = await getExistingDocs('students', studentIds);
         }
         const directoryStudents = studentDocs.map((item) => ({ id: item.id, name: item.data()?.name || item.id, parentIds: item.data()?.parentIds || [] }));
         setAvailableStudents(directoryStudents);
@@ -318,24 +346,24 @@ function App() {
     event.preventDefault();
     setAuthError('');
     setIsAuthenticating(true);
+    let createdUser: User | null = null;
 
     try {
       if (authMode === 'login') {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        // Self-signup only ever creates a pending PARENT account. Teacher and
-        // admin accounts are created/promoted by an existing admin (the very
-        // first admin is bootstrapped manually in Firebase, per the README).
+        // Every self-signup remains pending until an admin approves it.
         const credential = await createUserWithEmailAndPassword(auth, email, password);
+        createdUser = credential.user;
         await setDoc(doc(db, 'users', credential.user.uid), {
           uid: credential.user.uid,
           email,
           name: signupName.trim(),
-          role: 'parent',
+          role: signupRole,
           status: 'pending',
           language: locale,
-          linkedChildIds: [],
-          requestedChildName: signupStudentName.trim(),
+          ...(signupRole === 'parent' ? { linkedChildIds: [], requestedChildName: signupStudentName.trim() } : {}),
+          ...(signupRole === 'teacher' ? { assignedGroupIds: [] } : {}),
           createdAt: new Date().toISOString()
         });
       }
@@ -343,11 +371,20 @@ function App() {
       setPassword('');
       setSignupName('');
       setSignupStudentName('');
+      setSignupRole('parent');
       setAuthMode('login');
       if (authMode === 'signup') setAuthError(t.accountCreated);
       setIsLoginOpen(false);
-    } catch {
-      setAuthError(t.authError);
+    } catch (error) {
+      if (createdUser) {
+        try {
+          await deleteUser(createdUser);
+        } catch {
+          // The original Firebase error is more useful than a cleanup failure.
+        }
+      }
+      const firebaseError = error as { code?: string };
+      setAuthError(firebaseError.code ? `${t.authError} (${firebaseError.code})` : t.authError);
     } finally {
       setIsAuthenticating(false);
     }
@@ -412,7 +449,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!user || profileStatus !== 'active' || activeSection === 'dashboard' || activeSection === 'privacy' || activeSection === 'approvals') return;
+    if (!user || profileStatus !== 'active' || activeSection === 'dashboard' || activeSection === 'approvals') return;
 
     let cancelled = false;
     const loadSection = async () => {
@@ -428,7 +465,7 @@ function App() {
           let identifiers = role === 'parent' ? linkedChildIds : assignedGroupIds;
           let field = role === 'parent' ? 'studentId' : 'groupId';
           if (role === 'parent' && activeSection === 'assignments') {
-            const childSnapshots = await Promise.all(linkedChildIds.map((studentId) => getDoc(doc(db, 'students', studentId))));
+            const childSnapshots = await getExistingDocs('students', linkedChildIds);
             identifiers = [...new Set(childSnapshots.flatMap((snapshot) => (snapshot.data()?.groupMemberships || []).map((membership: { groupId: string }) => membership.groupId)))];
             field = 'groupId';
           }
@@ -442,14 +479,30 @@ function App() {
         }
 
         if (cancelled) return;
+        const sentLabel = translations[locale].sentOn;
+        if (activeSection === 'messages') {
+          const records = snapshots.flatMap((snapshot) => snapshot.docs.map((item) => {
+            const data = item.data();
+            return {
+              id: item.id,
+              senderId: data.senderId || '',
+              senderName: data.senderName || data.senderId || 'User',
+              text: data.text || data.body || '',
+              createdAt: data.createdAt || '',
+              sentAt: data.createdAt ? new Date(data.createdAt).toLocaleString(locale) : ''
+            };
+          })).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+          setMessageRecords(records);
+        }
         const items = snapshots.flatMap((snapshot) => snapshot.docs.map((item) => {
           const data = item.data();
+          const sentAt = data.createdAt ? new Date(data.createdAt).toLocaleString(locale) : '';
           const text = activeSection === 'calendar'
             ? `${data.title || 'Calendar event'} · ${data.startDate || data.date || ''}`
             : activeSection === 'messages'
-              ? `${data.senderName || data.senderId || 'Message'} · ${data.text || data.body || ''}`
+              ? `${data.senderName || data.senderId || 'Message'} · ${data.text || data.body || ''}${sentAt ? ` · ${sentLabel} ${sentAt}` : ''}`
               : activeSection === 'assignments'
-                ? `${data.title || 'Assignment'} · ${data.description || ''} · Due ${data.dueDate || 'date not set'}`
+                ? `${data.title || 'Assignment'} · ${data.description || ''} · Due ${data.dueDate || 'date not set'}${sentAt ? ` · ${sentLabel} ${sentAt}` : ''}`
                 : `${data.date || 'Attendance'} · ${data.status || data.attendanceStatus || 'recorded'}`;
           return { id: item.id, text };
         }));
@@ -463,32 +516,55 @@ function App() {
 
     void loadSection();
     return () => { cancelled = true; };
-  }, [activeSection, assignedGroupIds, linkedChildIds, profileStatus, role, user]);
+  }, [activeSection, assignedGroupIds, linkedChildIds, locale, profileStatus, role, user]);
+
+  const loadGroupsList = useCallback(async () => {
+    const [groupSnapshot, studentSnapshot] = await Promise.all([
+      getDocs(collection(db, 'groups')),
+      getDocs(collection(db, 'students'))
+    ]);
+    const studentNameById = new Map(studentSnapshot.docs.map((item) => [item.id, item.data().name || item.id]));
+    setAvailableStudents(studentSnapshot.docs.map((studentDoc) => ({ id: studentDoc.id, name: studentDoc.data().name || studentDoc.id })));
+    setManageableGroups(groupSnapshot.docs.map((item) => {
+      const data = item.data();
+      const studentIds: string[] = data.studentIds || [];
+      return {
+        id: item.id,
+        subject: data.subject || '',
+        level: data.level || '',
+        teacherId: data.teacherId || '',
+        teacherName: availableTeachers.find((teacher) => teacher.id === data.teacherId)?.name || data.teacherId || '',
+        studentIds,
+        studentNames: studentIds.map((studentId) => studentNameById.get(studentId) || studentId),
+        schedule: data.weeklySchedule || ''
+      };
+    }));
+  }, [availableTeachers]);
 
   useEffect(() => {
     if (!user || role !== 'admin' || profileStatus !== 'active' || activeSection !== 'groups') return;
-    void getDocs(collection(db, 'students')).then((studentSnapshot) => {
-      setAvailableStudents(studentSnapshot.docs.map((studentDoc) => ({
-        id: studentDoc.id,
-        name: studentDoc.data().name || studentDoc.id
-      })));
-    }).catch(() => setGroupMessage('Students could not be loaded. Check that Firestore rules are deployed.'));
-  }, [activeSection, profileStatus, role, user]);
+    void loadGroupsList().catch(() => setGroupMessage('Students could not be loaded. Check that Firestore rules are deployed.'));
+  }, [activeSection, loadGroupsList, profileStatus, role, user]);
 
   useEffect(() => {
     if (!user || profileStatus !== 'active' || activeSection !== 'attendance') return;
+    let cancelled = false;
     if (role === 'teacher' && attendanceGroupId) {
       setAttendanceStudents([]);
+      setAttendanceGroupStudentCount(0);
       setAttendedStudentIds([]);
       setLateStudentIds([]);
       void getDoc(doc(db, 'groups', attendanceGroupId)).then(async (groupSnapshot) => {
         const studentIds = groupSnapshot.data()?.studentIds || [];
-        const studentSnapshots = await Promise.all(studentIds.map((studentId: string) => getDoc(doc(db, 'students', studentId))));
-        setAttendanceStudents(studentSnapshots.filter((snapshot) => snapshot.exists()).map((snapshot) => ({
+        if (cancelled) return;
+        setAttendanceGroupStudentCount(studentIds.length);
+        const studentDocs = await getExistingDocs('students', studentIds);
+        if (cancelled) return;
+        setAttendanceStudents(studentDocs.map((snapshot) => ({
           id: snapshot.id,
           name: snapshot.data()?.name || snapshot.id
         })));
-      }).catch(() => setAttendanceStudents([]));
+      }).catch(() => { if (!cancelled) setAttendanceStudents([]); });
     }
 
     if (role === 'admin') {
@@ -497,31 +573,48 @@ function App() {
         getDocs(collection(db, 'students')),
         getDocs(collection(db, 'attendance'))
       ]).then(([groupSnapshot, studentSnapshot, attendanceSnapshot]) => {
-        const students = new Map(studentSnapshot.docs.map((snapshot) => [snapshot.id, snapshot.data().name || snapshot.id]));
+        if (cancelled) return;
+        const studentNameById = new Map(studentSnapshot.docs.map((snapshot) => [snapshot.id, snapshot.data().name || snapshot.id]));
+        const groups = groupSnapshot.docs.map((item) => ({ id: item.id, name: `${item.data().subject || 'Group'} · ${item.data().level || ''}` }));
         const records = attendanceSnapshot.docs.map((snapshot) => snapshot.data());
-        const summaries = groupSnapshot.docs.map((groupSnapshotItem) => {
-          const group = groupSnapshotItem.data();
-          const groupRecords = records.filter((record) => record.groupId === groupSnapshotItem.id);
-          const sessionDates = new Set(groupRecords.map((record) => record.date).filter(Boolean));
-          const groupStudentIds = group.studentIds || [];
-          const studentsInGroup = groupStudentIds.map((studentId: string) => {
-            const history = groupRecords.filter((record) => record.studentId === studentId).map((record) => ({ date: record.date || '', status: record.status || 'absent' }));
-            return { id: studentId, name: students.get(studentId) || studentId, date: history[0]?.date || '', history };
-          });
-          const present = groupRecords.filter((record) => record.status === 'present').length;
-          return {
-            groupId: groupSnapshotItem.id,
-            groupName: `${group.subject || 'Group'} · ${group.level || ''}`,
-            sessions: sessionDates.size,
-            present,
-            total: groupRecords.length,
-            students: studentsInGroup
-          };
-        });
-        setAttendanceSummaries(summaries);
-      }).catch(() => setAttendanceSummaries([]));
+        setGroupAttendance(buildGroupAttendance(groups, records, studentNameById));
+      }).catch(() => { if (!cancelled) setGroupAttendance([]); });
     }
-  }, [activeSection, attendanceGroupId, profileStatus, role, user]);
+
+    if (role === 'teacher') {
+      void Promise.all(assignedGroupIds.map((groupId) => getDocs(query(collection(db, 'attendance'), where('groupId', '==', groupId)))))
+        .then((snapshots) => {
+          if (cancelled) return;
+          const studentNameById = new Map(availableStudents.map((student) => [student.id, student.name]));
+          const records = snapshots.flatMap((snapshot) => snapshot.docs.map((item) => item.data()));
+          setGroupAttendance(buildGroupAttendance(availableGroups, records, studentNameById));
+        }).catch(() => { if (!cancelled) setGroupAttendance([]); });
+    }
+
+    if (role === 'parent') {
+      void Promise.all(linkedChildIds.map((studentId) => getDocs(query(collection(db, 'attendance'), where('studentId', '==', studentId)))))
+        .then((snapshots) => {
+          if (cancelled) return;
+          const studentNameById = new Map(availableStudents.map((student) => [student.id, student.name]));
+          setParentAttendance(linkedChildIds.map((studentId, index) => ({
+            studentId,
+            studentName: studentNameById.get(studentId) || studentId,
+            days: snapshots[index].docs
+              .map((item) => item.data())
+              .map((record) => ({ date: record.date || '', status: record.status || 'absent' }))
+              .sort((a, b) => b.date.localeCompare(a.date))
+          })));
+        }).catch(() => { if (!cancelled) setParentAttendance([]); });
+    }
+    return () => { cancelled = true; };
+  }, [activeSection, assignedGroupIds, attendanceGroupId, availableGroups, availableStudents, linkedChildIds, profileStatus, role, user]);
+
+  useEffect(() => {
+    if (activeSection !== 'attendance') {
+      setAttendanceViewGroupId(null);
+      setAttendanceViewDate(null);
+    }
+  }, [activeSection]);
 
   const approveParent = async (parentId: string, accountRole: Role, childId: string) => {
     try {
@@ -547,6 +640,7 @@ function App() {
         name: studentName,
         parentIds: [parent.id],
         groupMemberships: [],
+        groupIds: [],
         createdAt: new Date().toISOString()
       });
       setAvailableStudents((students) => [...students, { id: studentReference.id, name: studentName }]);
@@ -567,6 +661,7 @@ function App() {
         name: newStudentName.trim(),
         parentIds: matchingParents.map((parent) => parent.id),
         groupMemberships: [],
+        groupIds: [],
         createdAt: new Date().toISOString()
       });
       setAvailableStudents((students) => [...students, { id: studentReference.id, name: newStudentName.trim() }]);
@@ -684,26 +779,88 @@ function App() {
     }
   };
 
-  const createGroup = async (event: FormEvent<HTMLFormElement>) => {
+  const resetGroupForm = () => {
+    setEditingGroupId(null);
+    setGroupId('');
+    setGroupSubject('Quran');
+    setGroupLevel('Preparatory');
+    setGroupTeacherUid('');
+    setGroupStudentIds([]);
+    setGroupSchedule('');
+  };
+
+  const startEditGroup = (group: { id: string; subject: string; level: string; teacherId: string; studentIds: string[]; schedule: string }) => {
+    setEditingGroupId(group.id);
+    setGroupId(group.id);
+    setGroupSubject(group.subject || 'Quran');
+    setGroupLevel(group.level || 'Preparatory');
+    setGroupTeacherUid(group.teacherId);
+    setGroupStudentIds(group.studentIds);
+    setGroupSchedule(group.schedule);
+    setGroupMessage('');
+  };
+
+  // Rewrites each affected student's groupMemberships from scratch so add/remove/relabel
+  // stay consistent without relying on exact-match arrayUnion/arrayRemove semantics.
+  const syncStudentGroupMemberships = async (targetGroupId: string, nextStudentIds: string[], previousStudentIds: string[] = []) => {
+    const affectedIds = [...new Set([...previousStudentIds, ...nextStudentIds])];
+    await Promise.all(affectedIds.map(async (studentId) => {
+      const studentSnapshot = await getDoc(doc(db, 'students', studentId));
+      const memberships = (studentSnapshot.data()?.groupMemberships || []).filter((gm: { groupId: string }) => gm.groupId !== targetGroupId);
+      if (nextStudentIds.includes(studentId)) memberships.push({ groupId: targetGroupId, subject: groupSubject, level: groupLevel });
+      await updateDoc(doc(db, 'students', studentId), { groupMemberships: memberships, groupIds: memberships.map((gm: { groupId: string }) => gm.groupId) });
+    }));
+  };
+
+  const saveGroup = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!user || role !== 'admin' || !groupId.trim() || !groupTeacherUid.trim()) return;
+    const targetGroupId = groupId.trim();
     try {
-      await setDoc(doc(db, 'groups', groupId.trim()), {
-        subject: groupSubject,
-        level: groupLevel,
-        teacherId: groupTeacherUid.trim(),
-        studentIds: groupStudentIds,
-        weeklySchedule: groupSchedule.trim()
-      });
-      await updateDoc(doc(db, 'users', groupTeacherUid.trim()), { assignedGroupIds: arrayUnion(groupId.trim()) });
-      await Promise.all(groupStudentIds.map((studentId) => updateDoc(doc(db, 'students', studentId), {
-        groupMemberships: arrayUnion({ groupId: groupId.trim(), subject: groupSubject, level: groupLevel })
-      })));
-      setAssignedGroupIds((current) => current.includes(groupId.trim()) ? current : [...current, groupId.trim()]);
-      setGroupId('');
-      setGroupStudentIds([]);
-      setGroupSchedule('');
-      setGroupMessage(t.groupCreated);
+      if (editingGroupId) {
+        const existing = manageableGroups.find((group) => group.id === editingGroupId);
+        await updateDoc(doc(db, 'groups', targetGroupId), {
+          subject: groupSubject,
+          level: groupLevel,
+          teacherId: groupTeacherUid.trim(),
+          studentIds: groupStudentIds,
+          weeklySchedule: groupSchedule.trim()
+        });
+        if (existing && existing.teacherId !== groupTeacherUid.trim()) {
+          await updateDoc(doc(db, 'users', existing.teacherId), { assignedGroupIds: arrayRemove(targetGroupId) });
+          await updateDoc(doc(db, 'users', groupTeacherUid.trim()), { assignedGroupIds: arrayUnion(targetGroupId) });
+        }
+        await syncStudentGroupMemberships(targetGroupId, groupStudentIds, existing?.studentIds || []);
+        setGroupMessage(t.groupUpdated);
+      } else {
+        await setDoc(doc(db, 'groups', targetGroupId), {
+          subject: groupSubject,
+          level: groupLevel,
+          teacherId: groupTeacherUid.trim(),
+          studentIds: groupStudentIds,
+          weeklySchedule: groupSchedule.trim()
+        });
+        await updateDoc(doc(db, 'users', groupTeacherUid.trim()), { assignedGroupIds: arrayUnion(targetGroupId) });
+        await syncStudentGroupMemberships(targetGroupId, groupStudentIds, []);
+        setAssignedGroupIds((current) => current.includes(targetGroupId) ? current : [...current, targetGroupId]);
+        setGroupMessage(t.groupCreated);
+      }
+      resetGroupForm();
+      await loadGroupsList();
+    } catch {
+      setGroupMessage(t.approvalError);
+    }
+  };
+
+  const deleteGroup = async (group: { id: string; teacherId: string; studentIds: string[] }) => {
+    if (!user || role !== 'admin' || !window.confirm(t.confirmDeleteGroup)) return;
+    try {
+      await deleteDoc(doc(db, 'groups', group.id));
+      if (group.teacherId) await updateDoc(doc(db, 'users', group.teacherId), { assignedGroupIds: arrayRemove(group.id) });
+      await syncStudentGroupMemberships(group.id, [], group.studentIds);
+      if (editingGroupId === group.id) resetGroupForm();
+      setGroupMessage(t.groupDeleted);
+      await loadGroupsList();
     } catch {
       setGroupMessage(t.approvalError);
     }
@@ -745,13 +902,15 @@ function App() {
 
       {user ? <main className="content">
         <aside className="sidebar">
-          <div className="status-box">
-            <span className="dot" />
-            {user && profileStatus === 'pending' ? `${t.pendingNote}` : `${t.note}`}
-          </div>
+          {profileStatus === 'pending' && (
+            <div className="status-box">
+              <span className="dot" />
+              {t.pendingNote}
+            </div>
+          )}
 
           <nav className="nav">
-            {(['dashboard', 'calendar', 'messages', 'attendance', 'assignments', 'privacy', ...(role === 'admin' ? ['approvals', 'groups'] : [])] as Section[]).map((section) => (
+            {(['dashboard', 'calendar', 'messages', 'attendance', 'assignments', ...(role === 'admin' ? ['approvals', 'groups'] : [])] as Section[]).map((section) => (
               <button className={activeSection === section ? 'active' : ''} key={section} type="button" onClick={() => setActiveSection(section)}>
                 {t[section]}
               </button>
@@ -773,13 +932,14 @@ function App() {
               <span className="badge">{t[role]}</span>
               <h2>{profileName || user.email}</h2>
               <p>{user.email}</p>
-              <p>{t.note}</p>
             </div>
-            <div className="metrics">
-              <div><strong>{dashboardCounts.teachers}</strong><span>{t.teachers}</span></div>
-              <div><strong>{dashboardCounts.students}</strong><span>{t.students}</span></div>
-              <div><strong>{dashboardCounts.groups}</strong><span>{t.groups}</span></div>
-            </div>
+            {role !== 'parent' && (
+              <div className="metrics">
+                <div><strong>{dashboardCounts.teachers}</strong><span>{t.teachers}</span></div>
+                <div><strong>{dashboardCounts.students}</strong><span>{t.students}</span></div>
+                <div><strong>{dashboardCounts.groups}</strong><span>{t.groups}</span></div>
+              </div>
+            )}
           </div>
 
           <div className="section-heading">
@@ -787,26 +947,27 @@ function App() {
               <span className="eyebrow">{t.selected}</span>
               <h2>{t[activeSection]}</h2>
             </div>
-            <span className="muted">{t.signedInAs}</span>
           </div>
 
-          <article className="detail-card">
-            <div className="detail-card-heading">
-              <div>
-                <span className="eyebrow">{t[activeSection]}</span>
-                <h3>{t[activeSection]}{isLoadingData ? ' · Loading' : ''}</h3>
+          {activeSection !== 'messages' && activeSection !== 'attendance' && (
+            <article className="detail-card">
+              <div className="detail-card-heading">
+                <div>
+                  <span className="eyebrow">{t[activeSection]}</span>
+                  <h3>{t[activeSection]}{isLoadingData ? ' · Loading' : ''}</h3>
+                </div>
+                <span className="count-badge">{detailItems.length}</span>
               </div>
-              <span className="count-badge">{detailItems.length}</span>
-            </div>
-            <ul className="activity-list">
-              {detailItems.length === 0 ? <li><span className="muted">{t.noRecords}</span></li> : detailItems.map((item) => (
-                <li key={item}>
-                  <span className="activity-dot" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </article>
+              <ul className="activity-list">
+                {detailItems.length === 0 ? <li><span className="muted">{t.noRecords}</span></li> : detailItems.map((item) => (
+                  <li key={item}>
+                    <span className="activity-dot" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          )}
 
           {activeSection === 'calendar' && role === 'admin' && (
             <article className="detail-card event-form-card">
@@ -837,6 +998,37 @@ function App() {
             </article>
           )}
 
+          {activeSection === 'messages' && user && profileStatus === 'active' && (() => {
+            const inboxMessages = messageRecords.filter((message) => message.senderId !== user.uid);
+            const sentMessages = messageRecords.filter((message) => message.senderId === user.uid);
+            return (
+              <>
+                <article className="detail-card">
+                  <div className="detail-card-heading">
+                    <div><span className="eyebrow">{t.messages}</span><h3>{t.inbox}</h3></div>
+                    <span className="count-badge">{inboxMessages.length}</span>
+                  </div>
+                  <ul className="activity-list">
+                    {inboxMessages.length === 0 ? <li><span className="muted">{t.noRecords}</span></li> : inboxMessages.map((message) => (
+                      <li key={message.id}><span className="activity-dot" /><span>{message.senderName} · {message.text}{message.sentAt ? ` · ${t.sentOn} ${message.sentAt}` : ''}</span></li>
+                    ))}
+                  </ul>
+                </article>
+                <article className="detail-card">
+                  <div className="detail-card-heading">
+                    <div><span className="eyebrow">{t.messages}</span><h3>{t.sent}</h3></div>
+                    <span className="count-badge">{sentMessages.length}</span>
+                  </div>
+                  <ul className="activity-list">
+                    {sentMessages.length === 0 ? <li><span className="muted">{t.noRecords}</span></li> : sentMessages.map((message) => (
+                      <li key={message.id}><span className="activity-dot" /><span>{message.text}{message.sentAt ? ` · ${t.sentOn} ${message.sentAt}` : ''}</span></li>
+                    ))}
+                  </ul>
+                </article>
+              </>
+            );
+          })()}
+
           {activeSection === 'messages' && user && profileStatus === 'active' && (
             <article className="detail-card event-form-card">
               <span className="eyebrow">{t[role]}</span>
@@ -865,7 +1057,7 @@ function App() {
                 <button className="primary-action" type="submit">{t.saveAttendance}</button>
               </form>
               <div className="attendance-checklist">
-                {attendanceStudents.length === 0 ? <p className="muted">{attendanceGroupId ? 'No students assigned to this group.' : 'Select a group first.'}</p> : attendanceStudents.map((student) => (
+                {attendanceStudents.length === 0 ? <p className="muted">{!attendanceGroupId ? 'Select a group first.' : attendanceGroupStudentCount === 0 ? 'No students assigned to this group.' : 'Students are assigned but could not be loaded. Ask an admin to open Groups → Edit this group → Update group to repair access.'}</p> : attendanceStudents.map((student) => (
                   <div className="attendance-student" key={student.id}>
                     <input type="checkbox" checked={attendedStudentIds.includes(student.id)} onChange={(event) => setAttendedStudentIds((current) => event.target.checked ? [...current, student.id] : current.filter((id) => id !== student.id))} />
                     <span>{student.name}</span>
@@ -878,23 +1070,63 @@ function App() {
             </article>
           )}
 
-          {activeSection === 'attendance' && role === 'admin' && (
+          {activeSection === 'attendance' && (role === 'teacher' || role === 'admin') && (
             <article className="detail-card attendance-summary-card">
-              <span className="eyebrow">{t.admin}</span>
+              <span className="eyebrow">{role === 'admin' ? t.admin : t.teacher}</span>
               <h3>{t.attendanceSummary}</h3>
-              {attendanceSummaries.length === 0 ? <p className="muted">{t.noAttendanceData}</p> : attendanceSummaries.map((summary) => {
-                const denominator = summary.sessions * summary.students.length;
-                const attendedCount = summary.students.reduce((count, student) => count + student.history.filter((record) => record.status === 'present' || record.status === 'late').length, 0);
-                const percentage = denominator ? Math.round((attendedCount / denominator) * 100) : 0;
-                return (
-                  <details className="attendance-group" key={summary.groupId}>
-                    <summary><strong>{summary.groupName}</strong><span>{percentage}% · {summary.sessions} {t.calendar}</span></summary>
-                    <div className="attendance-history">
-                      {summary.students.map((student) => <div className="student-history" key={student.id}><strong>{student.name}</strong><span>{student.history.length ? student.history.map((record) => `${record.date}: ${record.status}`).join(' · ') : t.noAttendanceData}</span></div>)}
-                    </div>
-                  </details>
-                );
-              })}
+              {groupAttendance.length === 0 ? <p className="muted">{t.noAttendanceData}</p> : !attendanceViewGroupId ? (
+                <ul className="approval-list">
+                  {groupAttendance.map((group) => {
+                    const totalPresent = group.days.reduce((sum, day) => sum + day.present, 0);
+                    const totalPossible = group.days.reduce((sum, day) => sum + day.total, 0);
+                    const percentage = totalPossible ? Math.round((totalPresent / totalPossible) * 100) : 0;
+                    return (
+                      <li key={group.groupId}>
+                        <span><strong>{group.groupName}</strong><small>{group.days.length} {t.calendar} · {percentage}%</small></span>
+                        <button className="secondary-action small-action" type="button" onClick={() => setAttendanceViewGroupId(group.groupId)}>{t.open}</button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : !attendanceViewDate ? (
+                <>
+                  <button className="text-action" type="button" onClick={() => setAttendanceViewGroupId(null)}>{t.back}</button>
+                  <ul className="approval-list">
+                    {groupAttendance.find((group) => group.groupId === attendanceViewGroupId)?.days.map((day) => (
+                      <li key={day.date}>
+                        <span><strong>{day.date}</strong><small>{day.present}/{day.total} {t.present}</small></span>
+                        <button className="secondary-action small-action" type="button" onClick={() => setAttendanceViewDate(day.date)}>{t.open}</button>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <>
+                  <button className="text-action" type="button" onClick={() => setAttendanceViewDate(null)}>{t.back}</button>
+                  <div className="attendance-history">
+                    {groupAttendance.find((group) => group.groupId === attendanceViewGroupId)?.days.find((day) => day.date === attendanceViewDate)?.records.map((record) => (
+                      <div className="student-history" key={record.studentId}><strong>{record.studentName}</strong><span>{t[record.status as 'present' | 'absent' | 'late'] || record.status}</span></div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </article>
+          )}
+
+          {activeSection === 'attendance' && role === 'parent' && (
+            <article className="detail-card attendance-summary-card">
+              <span className="eyebrow">{t.parent}</span>
+              <h3>{t.attendanceSummary}</h3>
+              {parentAttendance.length === 0 ? <p className="muted">{t.noAttendanceData}</p> : parentAttendance.map((child) => (
+                <div className="attendance-group" key={child.studentId}>
+                  <div className="detail-card-heading"><strong>{child.studentName}</strong></div>
+                  <div className="attendance-history">
+                    {child.days.length === 0 ? <span className="muted">{t.noAttendanceData}</span> : child.days.map((day) => (
+                      <div className="student-history" key={day.date}><strong>{day.date}</strong><span>{t[day.status as 'present' | 'absent' | 'late'] || day.status}</span></div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </article>
           )}
 
@@ -906,15 +1138,32 @@ function App() {
                 <button className="secondary-action small-action" type="submit">{t.createStudent}</button>
               </form>
               {groupMessage && <p className="approval-message">{groupMessage}</p>}
-              <h3>{t.createGroup}</h3>
-              <form className="event-form group-form" onSubmit={createGroup}>
-                <label>{t.groupId}<input value={groupId} onChange={(event) => setGroupId(event.target.value)} placeholder="quran-1" required /></label>
+
+              <h3>{t.existingGroups}</h3>
+              {manageableGroups.length === 0 ? <p className="muted">{t.noGroups}</p> : (
+                <ul className="approval-list">
+                  {manageableGroups.map((group) => (
+                    <li key={group.id}>
+                      <span><strong>{group.id} · {group.subject} {group.level}</strong><small>{group.teacherName} · {group.schedule}</small><small>{group.studentNames.join(', ') || '—'}</small></span>
+                      <span className="approval-controls">
+                        <button className="secondary-action small-action" type="button" onClick={() => startEditGroup(group)}>{t.edit}</button>
+                        <button className="primary-action small-action" type="button" onClick={() => deleteGroup(group)}>{t.deleteAction}</button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <h3>{editingGroupId ? t.updateGroup : t.createGroup}</h3>
+              <form className="event-form group-form" onSubmit={saveGroup}>
+                <label>{t.groupId}<input value={groupId} onChange={(event) => setGroupId(event.target.value)} placeholder="quran-1" required disabled={Boolean(editingGroupId)} /></label>
                 <label>{t.subject}<select value={groupSubject} onChange={(event) => setGroupSubject(event.target.value)}><option>Quran</option><option>Arabic</option><option>Religion</option></select></label>
                 <label>{t.level}<select value={groupLevel} onChange={(event) => setGroupLevel(event.target.value)}><option>Preparatory</option><option>1</option><option>2</option><option>3</option></select></label>
                 <label>{t.teacherUid}<select value={groupTeacherUid} onChange={(event) => setGroupTeacherUid(event.target.value)} required><option value="">{t.teacherUid}</option>{availableTeachers.map((teacher) => <option key={teacher.id} value={teacher.id}>{teacher.name} · {teacher.email}</option>)}</select></label>
                 <fieldset className="student-picker"><legend>{t.studentIds}</legend>{availableStudents.length === 0 ? <span className="muted">No students available.</span> : availableStudents.map((student) => <label className="student-option" key={student.id}><input type="checkbox" checked={groupStudentIds.includes(student.id)} onChange={(event) => setGroupStudentIds((current) => event.target.checked ? [...current, student.id] : current.filter((id) => id !== student.id))} /><span>{student.name}</span><small>{student.id}</small></label>)}</fieldset>
                 <label>{t.schedule}<input value={groupSchedule} onChange={(event) => setGroupSchedule(event.target.value)} placeholder="Tue/Thu 17:30" /></label>
-                <button className="primary-action" type="submit">{t.createGroup}</button>
+                <button className="primary-action" type="submit">{editingGroupId ? t.updateGroup : t.createGroup}</button>
+                {editingGroupId && <button className="secondary-action" type="button" onClick={resetGroupForm}>{t.cancelEdit}</button>}
               </form>
             </article>
           )}
@@ -945,45 +1194,6 @@ function App() {
             </article>
           )}
 
-          <div className="grid">
-            <article className="card">
-              <h3>{t.messages}</h3>
-              <button className="card-action" type="button" onClick={() => setActiveSection('messages')}>{t.open}</button>
-              <ul>
-                <li>{dashboardCounts.unreadMessages} {t.unreadMessages}</li>
-                <li>{t.messageText}</li>
-              </ul>
-            </article>
-
-            <article className="card">
-              <h3>{t.attendance}</h3>
-              <button className="card-action" type="button" onClick={() => setActiveSection('attendance')}>{t.open}</button>
-              <ul>
-                <li>Weekly attendance log</li>
-                <li>Late/absent summaries</li>
-                <li>Term export ready</li>
-              </ul>
-            </article>
-
-            <article className="card">
-              <h3>{t.assignments}</h3>
-              <button className="card-action" type="button" onClick={() => setActiveSection('assignments')}>{t.open}</button>
-              <ul>
-                <li>{dashboardCounts.unreadAssignments} {t.unreadAssignments}</li>
-                <li>{t.dueDate}</li>
-                <li>{t.description}</li>
-              </ul>
-            </article>
-
-            <article className="card">
-              <h3>{t.offline}</h3>
-              <ul>
-                <li>{isOfflineReady ? 'Service worker registered' : 'Preparing offline cache'}</li>
-                <li>Firestore-only backend</li>
-                <li>GitHub Pages static deployment</li>
-              </ul>
-            </article>
-          </div>
             </>
           )}
         </section>
@@ -1010,8 +1220,9 @@ function App() {
                 <form className="auth-form" onSubmit={handleAuthentication}>
                   {authMode === 'signup' && (
                     <>
+                      <label>{t.accountType}<select value={signupRole} onChange={(event) => setSignupRole(event.target.value as Role)}><option value="parent">{t.parent}</option><option value="teacher">{t.teacher}</option><option value="admin">{t.admin}</option></select></label>
                       <label>{t.name}<input value={signupName} onChange={(event) => setSignupName(event.target.value)} required /></label>
-                      <label>{t.studentName}<input value={signupStudentName} onChange={(event) => setSignupStudentName(event.target.value)} required /></label>
+                      {signupRole === 'parent' && <label>{t.studentName}<input value={signupStudentName} onChange={(event) => setSignupStudentName(event.target.value)} required /></label>}
                     </>
                   )}
                   <label>{t.email}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>

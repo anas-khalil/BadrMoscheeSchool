@@ -10,19 +10,26 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && userDoc().role == 'admin';
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && userDoc().role == 'admin';
     }
 
     function isTeacher() {
-      return isSignedIn() && userDoc().role == 'teacher';
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && userDoc().role == 'teacher';
     }
 
     function isParent() {
-      return isSignedIn() && userDoc().role == 'parent';
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && userDoc().role == 'parent';
     }
 
     function teacherHasGroup(groupId) {
       return isTeacher() && groupId in userDoc().assignedGroupIds;
+    }
+
+    function teacherHasAnyGroup(studentGroupIds) {
+      return isTeacher()
+        && studentGroupIds is list
+        && userDoc().assignedGroupIds is list
+        && studentGroupIds.hasAny(userDoc().assignedGroupIds);
     }
 
     function parentHasChild(studentId) {
@@ -44,12 +51,11 @@ service cloud.firestore {
         resource.data.status == 'active'
       );
 
-      // Self-signup may only ever create a pending PARENT account.
-      // Teacher/admin accounts must be created or promoted by an existing admin
-      // (via the console for the first admin, or an admin-only flow after that).
+      // Self-signup may create only a pending account. Access fields are not
+      // effective until an existing admin approves the profile.
       allow create: if isAdmin()
         || (isSignedIn() && userId == request.auth.uid
-            && request.resource.data.role == 'parent'
+        && request.resource.data.role in ['admin', 'teacher', 'parent']
             && request.resource.data.status == 'pending');
 
       // A user may edit their own profile (e.g. name/language), but can NEVER
@@ -66,8 +72,7 @@ service cloud.firestore {
     match /students/{studentId} {
       allow read: if isSignedIn() && (
         isAdmin() ||
-        (resource.data.groupMemberships.size() > 0 &&
-          resource.data.groupMemberships.exists(gm, teacherHasGroup(gm.groupId))) ||
+        teacherHasAnyGroup(resource.data.groupIds) ||
         parentHasChild(studentId)
       );
       allow create, update, delete: if isAdmin();
