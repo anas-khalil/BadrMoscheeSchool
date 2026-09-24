@@ -582,12 +582,24 @@ function App() {
     }
 
     if (role === 'teacher') {
-      void Promise.all(assignedGroupIds.map((groupId) => getDocs(query(collection(db, 'attendance'), where('groupId', '==', groupId)))))
-        .then((snapshots) => {
+      // Built self-contained from assignedGroupIds (like the parent branch below),
+      // rather than depending on the separately-timed availableGroups state, which
+      // can still be empty the first time this effect runs and would silently
+      // drop all fetched attendance records.
+      void Promise.all(assignedGroupIds.map((groupId) => getDoc(doc(db, 'groups', groupId))))
+        .then(async (groupDocs) => {
+          if (cancelled) return;
+          const groups = groupDocs.filter((snapshot) => snapshot.exists()).map((snapshot) => ({
+            id: snapshot.id,
+            name: `${snapshot.data()?.subject || 'Group'} · ${snapshot.data()?.level || ''}`
+          }));
+          const attendanceSnapshots = await Promise.all(
+            assignedGroupIds.map((groupId) => getDocs(query(collection(db, 'attendance'), where('groupId', '==', groupId))))
+          );
           if (cancelled) return;
           const studentNameById = new Map(availableStudents.map((student) => [student.id, student.name]));
-          const records = snapshots.flatMap((snapshot) => snapshot.docs.map((item) => item.data()));
-          setGroupAttendance(buildGroupAttendance(availableGroups, records, studentNameById));
+          const records = attendanceSnapshots.flatMap((snapshot) => snapshot.docs.map((item) => item.data()));
+          setGroupAttendance(buildGroupAttendance(groups, records, studentNameById));
         }).catch(() => { if (!cancelled) setGroupAttendance([]); });
     }
 
@@ -607,7 +619,7 @@ function App() {
         }).catch(() => { if (!cancelled) setParentAttendance([]); });
     }
     return () => { cancelled = true; };
-  }, [activeSection, assignedGroupIds, attendanceGroupId, availableGroups, availableStudents, linkedChildIds, profileStatus, role, user]);
+  }, [activeSection, assignedGroupIds, attendanceGroupId, availableStudents, linkedChildIds, profileStatus, role, user]);
 
   useEffect(() => {
     if (activeSection !== 'attendance') {

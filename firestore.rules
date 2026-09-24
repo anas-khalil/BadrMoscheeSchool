@@ -95,8 +95,7 @@ service cloud.firestore {
       allow read: if isSignedIn() && (
         isAdmin() ||
         teacherHasGroup(resource.data.groupId) ||
-        parentHasChild(resource.data.studentId) ||
-        parentHasGroup(resource.data.groupId)
+        parentHasChild(resource.data.studentId)
       );
       allow create, update, delete: if isAdmin() ||
         (teacherHasGroup(request.resource.data.groupId) &&
@@ -128,9 +127,11 @@ service cloud.firestore {
 
     match /messages/{messageId} {
       allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
-      allow create: if isSignedIn() && request.auth.uid in request.resource.data.participants
+      allow create: if isSignedIn() && (isAdmin() || isTeacher() || isParent())
+        && request.auth.uid in request.resource.data.participants
         && request.resource.data.senderId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.participants.hasAny([request.auth.uid]);
+      allow update: if isSignedIn() && request.auth.uid in resource.data.participants
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unread', 'unreadFor']);
       allow delete: if isAdmin();
     }
 
