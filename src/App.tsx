@@ -343,8 +343,15 @@ function App() {
 
     const loadDashboardData = async () => {
       try {
-        const [userSnapshot, groupSnapshot, studentSnapshot, messageSnapshot] = await Promise.all([
-          getDocs(query(collection(db, 'users'), where('status', '==', 'active'))).catch(() => ({ docs: [] })),
+        // NOTE: recipient/messaging directory data now comes from the
+        // `directory` collection (name + role only), not from a `users`
+        // query. Firestore evaluates a *query* against the whole possible
+        // result set, and firestore.rules only allows a non-admin to read
+        // users/{uid} for their own uid — so `where('status','==','active')`
+        // on `users` was silently denied for teachers/parents, leaving
+        // availableUsers empty and every non-admin recipient dropdown blank.
+        const [directorySnapshot, groupSnapshot, studentSnapshot, messageSnapshot] = await Promise.all([
+          getDocs(collection(db, 'directory')).catch(() => ({ docs: [] })),
           role === 'admin' ? getDocs(collection(db, 'groups')).catch(() => ({ docs: [] })) : Promise.all(assignedGroupIds.map((groupId) => getDoc(doc(db, 'groups', groupId)).catch(() => null))),
           role === 'admin'
             ? getDocs(collection(db, 'students')).then((snapshot) => snapshot.docs).catch(() => [])
@@ -355,10 +362,10 @@ function App() {
         ]);
         if (cancelled) return;
 
-        const users = userSnapshot.docs.map((item) => ({
+        const users = directorySnapshot.docs.map((item) => ({
           id: item.id,
-          name: item.data().name || item.data().email || item.id,
-          email: item.data().email || '',
+          name: item.data().name || item.id,
+          email: '',
           role: item.data().role as Role
         }));
         const groupDocs = Array.isArray(groupSnapshot) ? groupSnapshot.filter((item) => item && item.exists()) : groupSnapshot.docs;
@@ -581,6 +588,11 @@ function App() {
           })).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
           setMessageRecords(records);
         }
+        // Assignments now surface who posted them and which group they
+        // belong to. `data.teacherId` matches the signed-in user for a
+        // teacher viewing their own post; otherwise it's resolved against
+        // availableUsers (populated from the `directory` collection),
+        // falling back to the raw id if the directory entry is missing.
         const items = snapshots.flatMap((snapshot) => snapshot.docs.map((item) => {
           const data = item.data();
           const sentAt = data.createdAt ? new Date(data.createdAt).toLocaleString(locale) : '';
@@ -589,7 +601,13 @@ function App() {
             : activeSection === 'messages'
               ? `${data.senderName || data.senderId || 'Message'} · ${data.text || data.body || ''}${sentAt ? ` · ${sentLabel} ${sentAt}` : ''}`
               : activeSection === 'assignments'
-                ? `${data.title || 'Assignment'} · ${data.description || ''} · Due ${data.dueDate || 'date not set'}${sentAt ? ` · ${sentLabel} ${sentAt}` : ''}`
+                ? (() => {
+                    const groupName = availableGroups.find((group) => group.id === data.groupId)?.name || data.groupId || translations[locale].group;
+                    const teacherName = data.teacherId === user.uid
+                      ? (profileName || user.email || data.teacherId)
+                      : (availableUsers.find((candidate) => candidate.id === data.teacherId)?.name || data.teacherId || translations[locale].teacher);
+                    return `${data.title || 'Assignment'} · ${teacherName} · ${groupName} · ${data.description || ''} · Due ${data.dueDate || 'date not set'}${sentAt ? ` · ${sentLabel} ${sentAt}` : ''}`;
+                  })()
                 : `${data.date || 'Attendance'} · ${data.status || data.attendanceStatus || 'recorded'}`;
           return { id: item.id, text };
         }));
@@ -603,7 +621,7 @@ function App() {
 
     void loadSection();
     return () => { cancelled = true; };
-  }, [activeSection, assignedGroupIds, linkedChildIds, locale, profileStatus, role, user]);
+  }, [activeSection, assignedGroupIds, availableGroups, availableUsers, linkedChildIds, locale, profileName, profileStatus, role, user]);
 
   const loadGroupsList = useCallback(async () => {
     const [groupSnapshot, studentSnapshot] = await Promise.all([
@@ -723,6 +741,15 @@ function App() {
       await updateDoc(doc(db, 'users', parentId), {
         status: 'active',
         ...(accountRole === 'parent' ? { linkedChildIds: childId.trim() ? [childId.trim()] : [] } : {})
+      });
+      // Mirror the minimal, non-sensitive fields into the public `directory`
+      // collection so this account shows up in every other role's message
+      // recipient dropdown (see firestore.rules: users/{uid} stays
+      // owner/admin-only, directory/{uid} is readable by any signed-in user).
+      const approvedParent = pendingParents.find((parent) => parent.id === parentId);
+      await setDoc(doc(db, 'directory', parentId), {
+        name: approvedParent?.name || approvedParent?.email || parentId,
+        role: accountRole
       });
       setPendingParents((parents) => parents.filter((parent) => parent.id !== parentId));
       setApprovalMessage(t.approved);
@@ -1138,7 +1165,7 @@ function App() {
                   {role === 'teacher' && <><option value="group">{t.groupRecipient}</option><option value="individual">{t.individualRecipient}</option></>}
                   {role === 'parent' && <><option value="teacher">{t.teacherRecipient}</option><option value="admin">{t.admin}</option></>}
                 </select></label>
-                {recipientType === 'group' ? <label>{t.recipient}<select value={recipientGroupId} onChange={(event) => setRecipientGroupId(event.target.value)} required><option value="">{t.selectRecipient}</option>{availableGroups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label> : recipientType !== 'everyone' && <label>{t.recipient}<select value={recipientUid} onChange={(event) => setRecipientUid(event.target.value)} required><option value="">{t.selectRecipient}</option>{recipientType === 'individual' ? availableStudents.flatMap((student) => (student.parentIds || []).map((parentId) => { const parent = availableUsers.find((item) => item.id === parentId); return parent ? <option key={`${student.id}-${parentId}`} value={parentId}>{student.name} · {parent.name}</option> : null; })) : availableUsers.filter((item) => recipientType === 'teacher' ? item.role === 'teacher' : recipientType === 'admin' ? item.role === 'admin' : item.role === 'parent').map((recipient) => <option key={recipient.id} value={recipient.id}>{recipient.name} · {recipient.email}</option>)}</select></label>}
+                {recipientType === 'group' ? <label>{t.recipient}<select value={recipientGroupId} onChange={(event) => setRecipientGroupId(event.target.value)} required><option value="">{t.selectRecipient}</option>{availableGroups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></label> : recipientType !== 'everyone' && <label>{t.recipient}<select value={recipientUid} onChange={(event) => setRecipientUid(event.target.value)} required><option value="">{t.selectRecipient}</option>{recipientType === 'individual' ? availableStudents.flatMap((student) => (student.parentIds || []).map((parentId) => { const parent = availableUsers.find((item) => item.id === parentId); return parent ? <option key={`${student.id}-${parentId}`} value={parentId}>{student.name} · {parent.name}</option> : null; })) : availableUsers.filter((item) => recipientType === 'teacher' ? item.role === 'teacher' : recipientType === 'admin' ? item.role === 'admin' : item.role === 'parent').map((recipient) => <option key={recipient.id} value={recipient.id}>{recipient.name}</option>)}</select></label>}
                 <label>{t.messageText}<textarea value={messageText} onChange={(event) => setMessageText(event.target.value)} rows={4} required /></label>
                 <button className="primary-action" type="submit">{t.sendMessage}</button>
               </form>

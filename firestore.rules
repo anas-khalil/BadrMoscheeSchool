@@ -48,9 +48,9 @@ service cloud.firestore {
     match /users/{userId} {
       // A profile is readable only by its owner or an admin. Do NOT widen
       // this to "any active user" — a full-document read leaks
-      // linkedChildIds/assignedGroupIds to anyone signed in. If a public
-      // staff/parent directory is ever needed, build it as a separate,
-      // deliberately-minimal collection instead of loosening this rule.
+      // linkedChildIds/assignedGroupIds to anyone signed in. The public
+      // messaging directory below (directory/{userId}) is the
+      // deliberately-minimal collection this comment used to ask for.
       allow read: if isSignedIn() && (userId == request.auth.uid || isAdmin());
 
       // Self-signup may create a pending PARENT or TEACHER account only.
@@ -75,6 +75,16 @@ service cloud.firestore {
                   .hasAny(['role', 'status', 'linkedChildIds', 'assignedGroupIds', 'consentGiven', 'consentDate']));
 
       allow delete: if isAdmin();
+    }
+
+    // Minimal, non-sensitive profile (name + role only) so any signed-in
+    // user can build a messaging recipient list, without exposing the
+    // protected fields on users/{uid} (linkedChildIds, assignedGroupIds,
+    // email, status). Only admins write it, at approval time (and for the
+    // first, manually-bootstrapped admin — see README).
+    match /directory/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     match /students/{studentId} {
