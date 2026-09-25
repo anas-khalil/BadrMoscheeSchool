@@ -9,6 +9,11 @@
    every functional element (nav, forms, buttons, data) is set in Work Sans
    for clarity. Arabic content gets its own typeface (IBM Plex Sans Arabic)
    rather than falling back to the system default.
+
+   Written mobile-first: every rule below the tokens is the PHONE layout.
+   Two `min-width` breakpoints layer on the tablet/desktop treatment, so a
+   phone never has to override a desktop layout back down to size — there
+   is nothing wider than the viewport to override in the first place.
    ========================================================================== */
 
 :root {
@@ -55,11 +60,20 @@
   --radius-pill: 999px;
 
   --shadow-elevated: 0 24px 64px rgba(11, 27, 51, 0.22);
+
+  /* One min-height for every tappable control, on every screen size —
+     44px is the standard comfortable touch target, and it costs a large
+     pointer nothing on desktop either. */
+  --tap: 44px;
 }
 
 /* ---------------------------------- Reset -------------------------------- */
 
 * { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
 
 html, body, #root {
   margin: 0;
@@ -68,8 +82,12 @@ html, body, #root {
 }
 
 body {
+  /* Mobile-first base size: 16px keeps iOS Safari from zooming the page
+     in whenever a form field is focused (it zooms if the focused
+     control's effective font-size is under 16px). Desktop tightens this
+     back up in the breakpoint below, where zoom-on-focus isn't a thing. */
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.55;
   font-weight: 400;
   color: var(--ink-900);
@@ -78,6 +96,22 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Safety net: nothing should ever be wider than the viewport, but if a
+     long, unbroken token (an email address, a Firebase document ID)
+     slips through, clip it instead of letting the whole page scroll
+     sideways and the mobile browser zoom out to compensate. */
+  overflow-x: hidden;
+}
+
+/* Any run of text without natural break points (emails, IDs, long URLs)
+   wraps instead of forcing its container wider. Normal spaced text is
+   unaffected — this only engages when there's nowhere else to break. */
+body, input, textarea, select, option {
+  overflow-wrap: anywhere;
+}
+
+html {
+  overflow-x: hidden;
 }
 
 :lang(ar) {
@@ -103,6 +137,7 @@ p { margin: 0; }
 button, select, input, textarea {
   font: inherit;
   color: inherit;
+  max-width: 100%;
 }
 
 button {
@@ -125,30 +160,46 @@ a { color: var(--brass-600); }
   }
 }
 
+@media (min-width: 760px) {
+  body {
+    font-size: 15px;
+  }
+}
+
 /* ---------------------------------- Shell -------------------------------- */
 
 .app-shell {
   min-height: 100vh;
-  padding: var(--space-6);
-  padding-top: max(var(--space-6), env(safe-area-inset-top, 0px));
-  padding-bottom: max(var(--space-6), env(safe-area-inset-bottom, 0px));
-  padding-left: max(var(--space-6), env(safe-area-inset-left, 0px));
-  padding-right: max(var(--space-6), env(safe-area-inset-right, 0px));
+  padding: var(--space-4);
+  padding-top: max(var(--space-4), env(safe-area-inset-top, 0px));
+  padding-bottom: max(var(--space-4), env(safe-area-inset-bottom, 0px));
+  padding-left: max(var(--space-4), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--space-4), env(safe-area-inset-right, 0px));
+}
+
+@media (min-width: 760px) {
+  .app-shell {
+    padding: var(--space-6);
+    padding-top: max(var(--space-6), env(safe-area-inset-top, 0px));
+    padding-bottom: max(var(--space-6), env(safe-area-inset-bottom, 0px));
+    padding-left: max(var(--space-6), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--space-6), env(safe-area-inset-right, 0px));
+  }
 }
 
 .topbar {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: var(--space-5);
-  margin: 0 auto var(--space-6);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+  margin: 0 auto var(--space-4);
   max-width: 1240px;
-  padding-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
   border-bottom: 1px solid var(--line);
 }
 
 .topbar h1 {
-  font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+  font-size: 1.5rem;
 }
 
 .topbar p {
@@ -160,6 +211,7 @@ a { color: var(--brass-600); }
 .toolbar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
   flex-wrap: wrap;
 }
@@ -179,6 +231,7 @@ a { color: var(--brass-600); }
   color: var(--ink-900);
   border-radius: var(--radius-sm);
   padding: 9px 12px;
+  min-height: var(--tap);
 }
 
 .toolbar button {
@@ -187,6 +240,7 @@ a { color: var(--brass-600); }
   color: var(--ink-900);
   border-radius: var(--radius-sm);
   padding: 10px 16px;
+  min-height: var(--tap);
   font-weight: 600;
   transition: border-color 140ms ease, color 140ms ease;
 }
@@ -196,23 +250,56 @@ a { color: var(--brass-600); }
   color: var(--brick-600);
 }
 
+@media (min-width: 760px) {
+  .topbar {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: var(--space-5);
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-5);
+  }
+
+  .topbar h1 {
+    font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+  }
+}
+
 .content {
   max-width: 1240px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 264px minmax(0, 1fr);
-  gap: var(--space-6);
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
   align-items: start;
 }
 
+@media (min-width: 760px) {
+  .content {
+    grid-template-columns: 264px minmax(0, 1fr);
+    gap: var(--space-6);
+  }
+}
+
 /* --------------------------------- Sidebar -------------------------------- */
+/* On phones this is a sticky horizontal tab strip; on tablet/desktop it
+   becomes the familiar vertical sidebar. Same markup, same classes. */
 
 .sidebar {
   background: var(--navy-950);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  padding-top: max(var(--space-2), env(safe-area-inset-top, 0px));
   position: sticky;
-  top: var(--space-6);
+  top: 0;
+  z-index: 5;
+}
+
+@media (min-width: 760px) {
+  .sidebar {
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    top: var(--space-6);
+  }
 }
 
 .status-box {
@@ -224,8 +311,14 @@ a { color: var(--brass-600); }
   border: 1px solid rgba(211, 165, 68, 0.3);
   border-radius: var(--radius-md);
   padding: 11px var(--space-3);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
   font-size: 0.86rem;
+}
+
+@media (min-width: 760px) {
+  .status-box {
+    margin-bottom: var(--space-4);
+  }
 }
 
 .dot {
@@ -239,24 +332,34 @@ a { color: var(--brass-600); }
 
 .nav {
   display: grid;
+  grid-auto-flow: column;
+  justify-content: start;
   gap: 2px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav button {
-  text-align: start;
+  text-align: center;
   border: 0;
-  border-inline-start: 3px solid transparent;
+  border-bottom: 3px solid transparent;
   background: transparent;
   color: rgba(255, 255, 255, 0.72);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  padding: 11px 13px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  padding: 11px var(--space-4);
+  min-height: var(--tap);
   font-weight: 500;
   font-size: 0.94rem;
+  white-space: nowrap;
+  scroll-snap-align: start;
   transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
-}
-
-[dir='rtl'] .nav button {
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
 }
 
 .nav button:hover {
@@ -267,8 +370,32 @@ a { color: var(--brass-600); }
 .nav button.active {
   color: var(--paper-0);
   background: rgba(211, 165, 68, 0.14);
-  border-inline-start-color: var(--brass-500);
+  border-bottom-color: var(--brass-500);
   font-weight: 600;
+}
+
+@media (min-width: 760px) {
+  .nav {
+    grid-auto-flow: row;
+    overflow-x: visible;
+  }
+
+  .nav button {
+    text-align: start;
+    border-bottom: none;
+    border-inline-start: 3px solid transparent;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 11px 13px;
+  }
+
+  [dir='rtl'] .nav button {
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  }
+
+  .nav button.active {
+    border-bottom-color: transparent;
+    border-inline-start-color: var(--brass-500);
+  }
 }
 
 /* ---------------------------------- Panel --------------------------------- */
@@ -279,15 +406,15 @@ a { color: var(--brass-600); }
 
 .hero-card {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-5);
-  padding: var(--space-6);
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
   border-radius: var(--radius-lg);
   background: linear-gradient(155deg, var(--navy-950) 0%, var(--navy-700) 100%);
   color: var(--paper-0);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-4);
 }
 
 .badge {
@@ -304,7 +431,7 @@ a { color: var(--brass-600); }
 .hero-card h2 {
   font-family: var(--font-display);
   margin: var(--space-3) 0 var(--space-1);
-  font-size: clamp(1.3rem, 2vw, 1.8rem);
+  font-size: 1.4rem;
   color: var(--paper-0);
 }
 
@@ -315,14 +442,14 @@ a { color: var(--brass-600); }
 }
 
 .metrics {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-3);
-  flex-wrap: wrap;
 }
 
 .metrics > div {
-  min-width: 96px;
-  padding: 12px 16px;
+  min-width: 0;
+  padding: 12px 10px;
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -341,16 +468,56 @@ a { color: var(--brass-600); }
   font-size: 0.76rem;
 }
 
+@media (min-width: 760px) {
+  .hero-card {
+    flex-direction: row;
+    align-items: center;
+    text-align: start;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding: var(--space-6);
+    margin-bottom: var(--space-6);
+  }
+
+  .hero-card h2 {
+    font-size: clamp(1.3rem, 2vw, 1.8rem);
+  }
+
+  .metrics {
+    grid-template-columns: none;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .metrics > div {
+    min-width: 96px;
+    padding: 12px 16px;
+  }
+}
+
 .section-heading {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+  align-items: flex-start;
+  flex-direction: column;
   gap: var(--space-4);
   margin: var(--space-1) 0 var(--space-4);
 }
 
 .section-heading h2 {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
+}
+
+@media (min-width: 760px) {
+  .section-heading {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .section-heading h2 {
+    font-size: 1.5rem;
+  }
 }
 
 /* A quiet role/category label — colour and a leading rule carry the
@@ -370,21 +537,23 @@ a { color: var(--brass-600); }
   height: 2px;
   background: var(--brass-500);
   display: inline-block;
+  flex: 0 0 auto;
 }
 
 /* ------------------------------- Detail cards ------------------------------ */
 
 .detail-card {
-  margin-bottom: var(--space-5);
-  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--paper-0);
+  min-width: 0;
 }
 
 .pending-card {
-  margin-bottom: var(--space-5);
-  padding: var(--space-6);
+  margin-bottom: var(--space-4);
+  padding: var(--space-5);
   border: 1px solid var(--brick-100);
   border-inline-start: 4px solid var(--brick-600);
   border-radius: var(--radius-lg);
@@ -393,7 +562,7 @@ a { color: var(--brass-600); }
 
 .pending-card h2 {
   margin: var(--space-2) 0 var(--space-2);
-  font-size: 1.3rem;
+  font-size: 1.2rem;
 }
 
 .pending-card p {
@@ -404,18 +573,23 @@ a { color: var(--brass-600); }
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-3);
+}
+
+.detail-card-heading > div {
+  min-width: 0;
 }
 
 .detail-card h3 {
   margin: var(--space-1) 0 0;
-  font-size: 1.15rem;
+  font-size: 1.1rem;
 }
 
 .count-badge {
   display: grid;
   min-width: 30px;
   min-height: 30px;
+  flex: 0 0 auto;
   place-items: center;
   border-radius: 50%;
   background: var(--brass-050);
@@ -445,6 +619,11 @@ a { color: var(--brass-600); }
   background: var(--paper-0);
   color: var(--ink-600);
   font-size: 0.92rem;
+  min-width: 0;
+}
+
+.activity-list li span {
+  min-width: 0;
 }
 
 .activity-dot {
@@ -460,6 +639,26 @@ a { color: var(--brass-600); }
   font-size: 0.9rem;
 }
 
+@media (min-width: 760px) {
+  .detail-card {
+    margin-bottom: var(--space-5);
+    padding: var(--space-5);
+  }
+
+  .pending-card {
+    margin-bottom: var(--space-5);
+    padding: var(--space-6);
+  }
+
+  .pending-card h2 {
+    font-size: 1.3rem;
+  }
+
+  .detail-card h3 {
+    font-size: 1.15rem;
+  }
+}
+
 /* --------------------------------- Forms ---------------------------------- */
 
 .event-form-card {
@@ -472,9 +671,10 @@ a { color: var(--brass-600); }
 
 .quick-student-form {
   display: flex;
-  align-items: end;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--space-3);
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-4);
   padding-bottom: var(--space-4);
   border-bottom: 1px solid var(--line);
 }
@@ -492,29 +692,22 @@ a { color: var(--brass-600); }
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
+  min-height: var(--tap);
+  width: 100%;
 }
 
 .event-form {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr auto;
+  grid-template-columns: 1fr;
   align-items: end;
   gap: var(--space-3);
 }
 
-.teacher-form {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-}
-
-.group-form {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
 .student-picker {
   display: grid;
-  grid-column: span 2;
   gap: var(--space-2);
   min-width: 0;
-  max-height: 190px;
+  max-height: 220px;
   overflow: auto;
   margin: 0;
   border: 1px solid var(--line-strong);
@@ -538,11 +731,12 @@ a { color: var(--brass-600); }
   color: var(--ink-600);
   font-size: 0.86rem !important;
   font-weight: 500 !important;
+  min-width: 0;
 }
 
-.student-option input { width: auto; }
+.student-option input { width: 20px; height: 20px; flex: 0 0 auto; }
 
-.student-option small { color: var(--ink-400); }
+.student-option small { color: var(--ink-400); min-width: 0; overflow-wrap: anywhere; }
 
 .event-form label {
   display: grid;
@@ -550,14 +744,17 @@ a { color: var(--brass-600); }
   color: var(--ink-600);
   font-size: 0.84rem;
   font-weight: 600;
+  min-width: 0;
 }
 
 .event-form input,
 .event-form select {
+  width: 100%;
   min-width: 0;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
+  min-height: var(--tap);
   color: var(--ink-900);
   background: var(--paper-0);
 }
@@ -582,11 +779,13 @@ a { color: var(--brass-600); }
 }
 
 .message-form input,
-.message-form textarea {
+.message-form textarea,
+.message-form select {
   width: 100%;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
+  min-height: var(--tap);
   color: var(--ink-900);
   font: inherit;
   resize: vertical;
@@ -598,21 +797,54 @@ a { color: var(--brass-600); }
   border-color: var(--brass-500);
 }
 
+@media (min-width: 760px) {
+  .quick-student-form {
+    flex-direction: row;
+    align-items: end;
+  }
+
+  .quick-student-form input {
+    min-height: 0;
+  }
+
+  .event-form {
+    grid-template-columns: 1.5fr 1fr 1fr auto;
+  }
+
+  .teacher-form {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .group-form {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .student-picker {
+    grid-column: span 2;
+    max-height: 190px;
+  }
+
+  .event-form input,
+  .event-form select {
+    min-height: 0;
+  }
+}
+
 /* ------------------------------- Attendance -------------------------------- */
 
 .attendance-checklist {
   display: grid;
   gap: var(--space-2);
-  margin-top: var(--space-5);
+  margin-top: var(--space-4);
   padding-top: var(--space-4);
   border-top: 1px solid var(--line);
 }
 
 .attendance-student {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-3);
   padding: 11px var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
@@ -621,21 +853,24 @@ a { color: var(--brass-600); }
   cursor: pointer;
 }
 
-.attendance-student input { width: 18px; height: 18px; accent-color: var(--emerald-600); }
+.attendance-student input { width: 22px; height: 22px; accent-color: var(--emerald-600); flex: 0 0 auto; }
 
 .attendance-student small { color: var(--ink-400); }
 
 .late-toggle {
+  grid-column: 1 / -1;
+  justify-self: start;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   color: var(--brass-600);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  min-height: var(--tap);
 }
 
 .late-toggle input {
-  width: 15px;
-  height: 15px;
+  width: 18px;
+  height: 18px;
   accent-color: var(--brass-500);
 }
 
@@ -660,11 +895,32 @@ a { color: var(--brass-600); }
   border-radius: var(--radius-sm);
   background: var(--paper-0);
   border: 1px solid var(--line);
+  min-width: 0;
 }
 
 .student-history span {
   color: var(--ink-400);
   font-size: 0.86rem;
+}
+
+@media (min-width: 760px) {
+  .attendance-checklist {
+    margin-top: var(--space-5);
+  }
+
+  .attendance-student {
+    grid-template-columns: auto 1fr auto;
+    gap: var(--space-3);
+  }
+
+  .attendance-student input { width: 18px; height: 18px; }
+
+  .late-toggle {
+    grid-column: auto;
+    min-height: 0;
+  }
+
+  .late-toggle input { width: 15px; height: 15px; }
 }
 
 /* --------------------------------- Actions --------------------------------- */
@@ -677,6 +933,7 @@ a { color: var(--brass-600); }
   cursor: pointer;
   font-weight: 700;
   padding: 12px 16px;
+  min-height: var(--tap);
   transition: background 140ms ease, transform 140ms ease;
 }
 
@@ -695,6 +952,7 @@ a { color: var(--brass-600); }
   cursor: pointer;
   font-weight: 700;
   padding: 11px 15px;
+  min-height: var(--tap);
   transition: background 140ms ease;
 }
 
@@ -702,6 +960,7 @@ a { color: var(--brass-600); }
 
 .small-action {
   padding: 9px 12px;
+  min-height: 40px;
   white-space: nowrap;
 }
 
@@ -714,6 +973,7 @@ a { color: var(--brass-600); }
   cursor: pointer;
   font-size: 0.86rem;
   font-weight: 600;
+  min-height: var(--tap);
 }
 
 .approval-message {
@@ -726,16 +986,16 @@ a { color: var(--brass-600); }
 .approval-list {
   display: grid;
   gap: var(--space-2);
-  margin: var(--space-5) 0 0;
+  margin: var(--space-4) 0 0;
   padding: 0;
   list-style: none;
 }
 
 .approval-list li {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
   padding: var(--space-3);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
@@ -744,6 +1004,7 @@ a { color: var(--brass-600); }
 
 .approval-controls {
   display: flex !important;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
 }
@@ -753,13 +1014,35 @@ a { color: var(--brass-600); }
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
+  min-height: var(--tap);
+  flex: 1 1 160px;
+  min-width: 0;
 }
 
-.approval-controls input { width: 120px; }
-
-.approval-list span { display: grid; gap: 3px; }
+.approval-list span { display: grid; gap: 3px; min-width: 0; }
 
 .approval-list small { color: var(--ink-400); }
+
+@media (min-width: 760px) {
+  .approval-list {
+    margin-top: var(--space-5);
+  }
+
+  .approval-list li {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .approval-controls input,
+  .approval-controls select {
+    flex: 0 1 auto;
+    min-height: 0;
+  }
+
+  .approval-controls input { width: 120px; }
+}
 
 /* -------------------------------- Welcome ---------------------------------- */
 
@@ -767,14 +1050,14 @@ a { color: var(--brass-600); }
   min-height: calc(100vh - 150px);
   display: grid;
   place-items: center;
-  padding: var(--space-10) var(--space-5);
+  padding: var(--space-6) var(--space-4);
 }
 
 .welcome-copy {
   width: min(100%, 680px);
-  padding: var(--space-10) var(--space-8);
+  padding: var(--space-6) var(--space-4);
   border: 1px solid var(--line);
-  border-radius: 22px;
+  border-radius: var(--radius-lg);
   background: var(--paper-0);
   text-align: center;
 }
@@ -785,47 +1068,77 @@ a { color: var(--brass-600); }
 
 .welcome-copy h2 {
   margin: var(--space-3) 0 var(--space-3);
-  font-size: clamp(1.9rem, 4.4vw, 3rem);
+  font-size: clamp(1.7rem, 8vw, 3rem);
 }
 
 .welcome-copy p {
   max-width: 520px;
   margin: 0 auto;
   color: var(--ink-400);
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 
 .welcome-actions {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   gap: var(--space-3);
-  margin-top: var(--space-6);
+  margin-top: var(--space-5);
+}
+
+.welcome-actions button {
+  min-height: 48px;
+}
+
+@media (min-width: 760px) {
+  .welcome-screen {
+    padding: var(--space-10) var(--space-5);
+  }
+
+  .welcome-copy {
+    padding: var(--space-10) var(--space-8);
+    border-radius: 22px;
+  }
+
+  .welcome-copy p {
+    font-size: 1.05rem;
+  }
+
+  .welcome-actions {
+    flex-direction: row;
+    justify-content: center;
+  }
 }
 
 /* ---------------------------------- Modal ----------------------------------- */
+/* Phones get a bottom sheet — easier to reach one-handed and it respects
+   the home-indicator inset. Tablet/desktop gets the centred dialog. */
 
 .modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 10;
-  display: grid;
-  place-items: center;
-  padding: var(--space-5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
   background: rgba(11, 27, 51, 0.6);
 }
 
 .login-modal {
   position: relative;
-  width: min(100%, 460px);
-  padding: var(--space-8) var(--space-6);
-  border-radius: var(--radius-lg);
+  width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-5);
+  padding-bottom: max(var(--space-6), env(safe-area-inset-bottom, 0px));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   background: var(--paper-0);
   box-shadow: var(--shadow-elevated);
 }
 
 .login-modal h2 {
   margin: var(--space-2) 0;
-  font-size: 1.55rem;
+  font-size: 1.4rem;
 }
 
 .login-modal p {
@@ -851,6 +1164,7 @@ a { color: var(--brass-600); }
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   padding: 11px 12px;
+  min-height: var(--tap);
   color: var(--ink-900);
   background: var(--paper-0);
 }
@@ -859,6 +1173,10 @@ a { color: var(--brass-600); }
   outline: none;
   border-color: var(--brass-500);
   box-shadow: 0 0 0 3px var(--brass-050);
+}
+
+.auth-form button {
+  min-height: var(--tap);
 }
 
 .auth-error {
@@ -874,6 +1192,10 @@ a { color: var(--brass-600); }
   position: absolute;
   top: var(--space-3);
   inset-inline-end: var(--space-4);
+  min-width: var(--tap);
+  min-height: var(--tap);
+  display: grid;
+  place-items: center;
   border: 0;
   background: transparent;
   color: var(--ink-400);
@@ -884,6 +1206,26 @@ a { color: var(--brass-600); }
 
 .modal-close:hover { color: var(--brick-600); }
 
+@media (min-width: 760px) {
+  .modal-backdrop {
+    align-items: center;
+    padding: var(--space-5);
+  }
+
+  .login-modal {
+    width: min(100%, 460px);
+    max-height: none;
+    overflow-y: visible;
+    padding: var(--space-8) var(--space-6);
+    padding-bottom: var(--space-8);
+    border-radius: var(--radius-lg);
+  }
+
+  .login-modal h2 {
+    font-size: 1.55rem;
+  }
+}
+
 /* ----------------------------------- RTL ------------------------------------ */
 
 [dir='rtl'] .toolbar,
@@ -893,241 +1235,4 @@ a { color: var(--brass-600); }
 [dir='rtl'] .metrics,
 [dir='rtl'] .attendance-student {
   direction: rtl;
-}
-
-/* ------------------------------- Responsive ---------------------------------- */
-
-/* Tablet and down: collapse the two-column shell, turn the sidebar nav into
-   a sticky horizontal tab strip, and switch every multi-column form to a
-   single stacked column. */
-@media (max-width: 760px) {
-  .app-shell { padding: var(--space-4); }
-
-  .topbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-3);
-  }
-
-  .toolbar {
-    justify-content: space-between;
-  }
-
-  .content {
-    grid-template-columns: 1fr;
-    gap: var(--space-4);
-  }
-
-  /* The nav strip pins to the top of the viewport as the page scrolls, so
-     switching sections never requires scrolling back up first. */
-  .sidebar {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    border-radius: var(--radius-md);
-    padding: var(--space-2);
-    padding-top: max(var(--space-2), env(safe-area-inset-top, 0px));
-  }
-
-  .status-box {
-    margin-bottom: var(--space-2);
-  }
-
-  .nav {
-    grid-auto-flow: column;
-    justify-content: start;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
-    scrollbar-width: none;
-  }
-
-  .nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .nav button {
-    border-inline-start: none;
-    border-bottom: 3px solid transparent;
-    white-space: nowrap;
-    scroll-snap-align: start;
-    /* 44px is the standard minimum comfortable touch target. */
-    min-height: 44px;
-    padding-inline: var(--space-4);
-  }
-
-  .nav button.active {
-    border-inline-start-color: transparent;
-    border-bottom-color: var(--brass-500);
-  }
-
-  .section-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .welcome-copy {
-    padding: var(--space-6) var(--space-4);
-  }
-
-  .welcome-actions {
-    flex-direction: column;
-  }
-
-  .approval-list li {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .approval-controls {
-    flex-wrap: wrap;
-  }
-
-  .approval-controls input,
-  .approval-controls select {
-    flex: 1 1 100%;
-    width: auto;
-  }
-
-  .event-form,
-  .teacher-form,
-  .group-form {
-    grid-template-columns: 1fr;
-  }
-
-  .quick-student-form {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .student-picker {
-    grid-column: auto;
-    max-height: 240px;
-  }
-
-  .hero-card {
-    flex-direction: column;
-    align-items: stretch;
-    text-align: center;
-  }
-
-  .metrics {
-    justify-content: center;
-  }
-
-  /* Every field a person taps into gets a real target and a 16px floor —
-     below 16px, iOS Safari zooms the whole page in on focus. */
-  button,
-  select,
-  input,
-  textarea {
-    font-size: max(16px, 1em);
-  }
-
-  .primary-action,
-  .secondary-action,
-  .toolbar button {
-    min-height: 44px;
-  }
-
-  .small-action {
-    min-height: 40px;
-  }
-
-  .attendance-student {
-    grid-template-columns: auto 1fr;
-    row-gap: var(--space-2);
-  }
-
-  .attendance-student input {
-    width: 22px;
-    height: 22px;
-  }
-
-  .late-toggle {
-    grid-column: 1 / -1;
-    justify-self: start;
-  }
-
-  .late-toggle input {
-    width: 18px;
-    height: 18px;
-  }
-
-  .student-option input {
-    width: 20px;
-    height: 20px;
-  }
-
-  /* The login/signup dialog becomes a bottom sheet: easier to reach with a
-     thumb than a centred box, and it respects the home-indicator inset. */
-  .modal-backdrop {
-    align-items: flex-end;
-    padding: 0;
-  }
-
-  .login-modal {
-    width: 100%;
-    max-height: 92vh;
-    overflow-y: auto;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    padding: var(--space-6) var(--space-5);
-    padding-bottom: max(var(--space-6), env(safe-area-inset-bottom, 0px));
-  }
-
-  .modal-close {
-    min-width: 44px;
-    min-height: 44px;
-    display: grid;
-    place-items: center;
-  }
-}
-
-/* Small phones: tighten the type scale and give up the last bit of padding
-   without letting anything feel cramped. */
-@media (max-width: 480px) {
-  .topbar h1 {
-    font-size: 1.5rem;
-  }
-
-  .hero-card {
-    padding: var(--space-5);
-  }
-
-  .metrics {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    width: 100%;
-  }
-
-  .metrics > div {
-    min-width: 0;
-  }
-
-  .detail-card,
-  .event-form-card,
-  .pending-card {
-    padding: var(--space-4);
-  }
-
-  .event-form,
-  .teacher-form,
-  .group-form,
-  .message-form {
-    gap: var(--space-3);
-  }
-
-  .approval-list li {
-    padding: var(--space-3) var(--space-3);
-  }
-
-  .welcome-copy {
-    padding: var(--space-5) var(--space-4);
-    border-radius: var(--radius-lg);
-  }
-
-  .welcome-actions button {
-    min-height: 48px;
-  }
 }
