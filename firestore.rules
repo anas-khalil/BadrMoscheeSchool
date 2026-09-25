@@ -72,7 +72,7 @@ service cloud.firestore {
       allow update: if isAdmin()
         || (isSignedIn() && userId == request.auth.uid
             && !request.resource.data.diff(resource.data).affectedKeys()
-                  .hasAny(['role', 'status', 'linkedChildIds', 'assignedGroupIds']));
+                  .hasAny(['role', 'status', 'linkedChildIds', 'assignedGroupIds', 'consentGiven', 'consentDate']));
 
       allow delete: if isAdmin();
     }
@@ -97,9 +97,16 @@ service cloud.firestore {
         teacherHasGroup(resource.data.groupId) ||
         parentHasChild(resource.data.studentId)
       );
-      allow create, update, delete: if isAdmin() ||
+      allow create: if isAdmin() ||
         (teacherHasGroup(request.resource.data.groupId) &&
          request.resource.data.teacherId == request.auth.uid);
+      allow update: if isAdmin() ||
+        (teacherHasGroup(resource.data.groupId) && 
+         teacherHasGroup(request.resource.data.groupId) &&
+         request.resource.data.teacherId == request.auth.uid);
+      allow delete: if isAdmin() ||
+        (teacherHasGroup(resource.data.groupId) &&
+         resource.data.teacherId == request.auth.uid);
     }
 
     match /assignments/{assignmentId} {
@@ -109,9 +116,16 @@ service cloud.firestore {
         parentHasChild(resource.data.studentId) ||
         parentHasGroup(resource.data.groupId)
       );
-      allow create, update, delete: if isAdmin() ||
+      allow create: if isAdmin() ||
         (teacherHasGroup(request.resource.data.groupId) &&
          request.resource.data.teacherId == request.auth.uid);
+      allow update: if isAdmin() ||
+        (teacherHasGroup(resource.data.groupId) && 
+         teacherHasGroup(request.resource.data.groupId) &&
+         request.resource.data.teacherId == request.auth.uid);
+      allow delete: if isAdmin() ||
+        (teacherHasGroup(resource.data.groupId) &&
+         resource.data.teacherId == request.auth.uid);
     }
 
     match /progress/{progressId} {
@@ -120,9 +134,16 @@ service cloud.firestore {
         teacherHasGroup(resource.data.groupId) ||
         parentHasChild(resource.data.studentId)
       );
-      allow create, update, delete: if isAdmin() ||
+      allow create: if isAdmin() ||
         (teacherHasGroup(request.resource.data.groupId) &&
          request.resource.data.teacherId == request.auth.uid);
+      allow update: if isAdmin() ||
+        (teacherHasGroup(resource.data.groupId) && 
+         teacherHasGroup(request.resource.data.groupId) &&
+         request.resource.data.teacherId == request.auth.uid);
+      allow delete: if isAdmin() ||
+        (teacherHasGroup(resource.data.groupId) &&
+         resource.data.teacherId == request.auth.uid);
     }
 
     match /messages/{messageId} {
