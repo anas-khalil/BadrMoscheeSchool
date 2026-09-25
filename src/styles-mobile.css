@@ -1,0 +1,322 @@
+/*
+ * Badr Moschee School — Responsive mobile navigation/layout patch
+ *
+ * Import this AFTER styles.css.
+ * It keeps the existing desktop design intact and changes only the
+ * narrow-screen experience.
+ */
+
+@media (max-width: 759px) {
+  /* ---------- Page shell ---------- */
+  .app-shell {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 12px;
+    padding-top: max(12px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+  }
+
+  .topbar,
+  .content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .topbar {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+  }
+
+  .topbar h1 {
+    font-size: clamp(1.35rem, 6vw, 1.6rem);
+    line-height: 1.15;
+  }
+
+  .topbar p {
+    font-size: 0.88rem;
+    line-height: 1.4;
+  }
+
+  /* Keep language + logout usable without forcing a wide row. */
+  .toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .toolbar label {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+  }
+
+  .toolbar select,
+  .toolbar button {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+  }
+
+  .toolbar select {
+    padding: 9px 10px;
+  }
+
+  .toolbar button {
+    padding: 9px 14px;
+  }
+
+  /* ---------- Mobile navigation ----------
+     Do not horizontally scroll the main navigation.
+     Two columns keep all primary destinations visible and tappable.
+  */
+  .sidebar {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 6px;
+    border-radius: 12px;
+    position: sticky;
+    top: 0;
+    overflow: visible;
+  }
+
+  .status-box {
+    max-width: 100%;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
+  .nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: row;
+    gap: 4px;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+    overscroll-behavior: auto;
+    scroll-snap-type: none;
+  }
+
+  .nav button {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 9px 8px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
+    font-size: 0.84rem;
+  }
+
+  .nav button.active {
+    border: 1px solid rgba(211, 165, 68, 0.42);
+    border-bottom-color: var(--brass-500);
+  }
+
+  /* ---------- Main cards ---------- */
+  .panel {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .hero-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: 18px 14px;
+    gap: 14px;
+    overflow: hidden;
+  }
+
+  .hero-card > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .hero-card h2 {
+    font-size: clamp(1.15rem, 5.5vw, 1.4rem);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .hero-card p {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+  }
+
+  .metrics > div {
+    min-width: 0;
+    padding: 10px 5px;
+  }
+
+  .metrics strong {
+    font-size: 1.35rem;
+  }
+
+  .metrics span {
+    display: block;
+    font-size: 0.7rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .section-heading,
+  .detail-card,
+  .pending-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .section-heading {
+    gap: 8px;
+    margin: 4px 0 12px;
+  }
+
+  .section-heading h2 {
+    font-size: 1.2rem;
+  }
+
+  .detail-card,
+  .pending-card {
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .detail-card-heading {
+    min-width: 0;
+  }
+
+  .detail-card h3,
+  .pending-card h2 {
+    overflow-wrap: anywhere;
+  }
+
+  .activity-list,
+  .activity-list li {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .activity-list li {
+    align-items: flex-start;
+    line-height: 1.4;
+  }
+
+  /* ---------- Forms / controls ---------- */
+  .event-form,
+  .teacher-form,
+  .group-form,
+  .message-form {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .event-form label,
+  .message-form label,
+  .quick-student-form label {
+    min-width: 0;
+  }
+
+  .event-form input,
+  .event-form select,
+  .message-form input,
+  .message-form textarea,
+  .message-form select,
+  .quick-student-form input {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .student-picker {
+    max-width: 100%;
+  }
+
+  /* Long email addresses / Firebase IDs must never widen a card. */
+  .panel *,
+  .detail-card *,
+  .hero-card * {
+    max-width: 100%;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-shell {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .topbar {
+    gap: 8px;
+  }
+
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar label {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .toolbar button {
+    width: 100%;
+  }
+
+  .sidebar {
+    padding: 5px;
+  }
+
+  .nav {
+    gap: 3px;
+  }
+
+  .nav button {
+    min-height: 42px;
+    padding: 8px 5px;
+    font-size: 0.8rem;
+  }
+
+  .hero-card {
+    padding: 16px 12px;
+  }
+
+  .metrics {
+    gap: 4px;
+  }
+
+  .metrics > div {
+    padding: 9px 3px;
+  }
+
+  .metrics span {
+    font-size: 0.66rem;
+  }
+}
