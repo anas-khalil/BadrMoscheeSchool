@@ -117,7 +117,9 @@ const translations: Record<Locale, Record<string, string>> = {
     ,approvals: 'Approvals', groups: 'Groups', pendingParents: 'Pending parent accounts', approve: 'Approve', approved: 'Parent approved', approvalError: 'Could not update this account.', eventTitle: 'Event title', eventDate: 'Event date', eventAudience: 'Audience', allSchool: 'Everyone', createEvent: 'Create event', eventCreated: 'Event created.', group: 'Group', studentId: 'Student ID', studentName: 'Student name', assignmentTitle: 'Assignment title', description: 'Description', dueDate: 'Due date', createAssignment: 'Post assignment', assignmentCreated: 'Assignment posted', attendanceStatus: 'Status', present: 'Present', absent: 'Absent', late: 'Late', saveAttendance: 'Save attendance', attendanceSaved: 'Attendance saved', loginButton: 'Login', signupButton: 'Sign up', chooseAccountType: 'Choose account type', accountType: 'Account type', signupNote: 'All new accounts require admin approval.', accountCreated: 'Account created. Please wait for admin approval.', groupId: 'Group ID', subject: 'Subject', level: 'Level', teacherUid: 'Teacher UID', studentIds: 'Students', schedule: 'Weekly schedule', createGroup: 'Create group', groupCreated: 'Group created and assigned.', attended: 'Attended', markAttendance: 'Mark Saturday attendance', attendanceDate: 'Session date', attendanceSummary: 'Attendance summary', attendanceRate: 'Attendance rate', viewHistory: 'View student history', history: 'History', noAttendanceData: 'No attendance data yet.', saturdayOnly: 'Please choose a Saturday.', messageText: 'Message', sendMessage: 'Send message', noRecords: 'No records yet.', existingGroups: 'Existing groups', noGroups: 'No groups created yet.', edit: 'Edit', deleteAction: 'Delete', updateGroup: 'Update group', groupUpdated: 'Group updated.', groupDeleted: 'Group deleted.', cancelEdit: 'Cancel edit', confirmDeleteGroup: 'Delete this group? This cannot be undone.', sentOn: 'Sent', inbox: 'Inbox', sent: 'Sent', back: 'Back'
     ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child', name: 'Full name', students: 'Students', teachers: 'Teachers', unreadMessages: 'Unread messages', unreadAssignments: 'Unread assignments', recipientType: 'Send to', everyone: 'Everyone', groupRecipient: 'Group', teacherRecipient: 'Teacher', parentRecipient: 'Parent', individualRecipient: 'Individual parent', recipient: 'Recipient', selectRecipient: 'Select recipient', messageSent: 'Message sent.'
     ,consentGuardian: 'I confirm that I am the parent or legal guardian of the child being registered.'
+    ,consentTeacherRole: 'I confirm that I am a teacher or staff member of the Badr Mosque School.'
     ,consentData: "I consent to my child's name, attendance records, and homework data being stored by Badr Mosque School in Germany for educational administration purposes. I understand I may withdraw this consent at any time by contacting the school."
+    ,consentTeacherData: 'I consent to my name and contact details being stored by Badr Mosque School in Germany for educational administration purposes. I understand I may withdraw this consent at any time.'
     ,consentPolicy: 'I have read and understood the Privacy Policy and agree to the Terms of Participation.'
     ,consentRequired: 'All three consent checkboxes are required to create an account.'
     ,privacyTitle: 'Privacy Policy — Datenschutzerklärung'
@@ -175,7 +177,9 @@ const translations: Record<Locale, Record<string, string>> = {
     ,approvals: 'Genehmigungen', groups: 'Gruppen', pendingParents: 'Ausstehende Elternkonten', approve: 'Genehmigen', approved: 'Elternkonto genehmigt', approvalError: 'Konto konnte nicht aktualisiert werden.', eventTitle: 'Veranstaltungstitel', eventDate: 'Veranstaltungsdatum', eventAudience: 'Zielgruppe', allSchool: 'Alle', createEvent: 'Veranstaltung erstellen', eventCreated: 'Veranstaltung erstellt.', group: 'Gruppe', studentId: 'Schüler-ID', studentName: 'Name des Schülers', assignmentTitle: 'Aufgabentitel', description: 'Beschreibung', dueDate: 'Fälligkeitsdatum', createAssignment: 'Aufgabe veröffentlichen', assignmentCreated: 'Aufgabe veröffentlicht', attendanceStatus: 'Status', present: 'Anwesend', absent: 'Abwesend', late: 'Verspätet', saveAttendance: 'Anwesenheit speichern', attendanceSaved: 'Anwesenheit gespeichert', loginButton: 'Anmelden', signupButton: 'Registrieren', chooseAccountType: 'Kontotyp auswählen', accountType: 'Kontotyp', signupNote: 'Alle neuen Konten benötigen eine Genehmigung.', accountCreated: 'Konto erstellt. Bitte warten Sie auf die Genehmigung.', groupId: 'Gruppen-ID', subject: 'Fach', level: 'Stufe', teacherUid: 'Lehrer-UID', studentIds: 'Schüler', schedule: 'Wochenplan', createGroup: 'Gruppe erstellen', groupCreated: 'Gruppe erstellt und zugewiesen.', attended: 'Anwesend', markAttendance: 'Samstagsanwesenheit erfassen', attendanceDate: 'Unterrichtsdatum', attendanceSummary: 'Anwesenheitsübersicht', attendanceRate: 'Anwesenheitsquote', viewHistory: 'Schülerverlauf anzeigen', history: 'Verlauf', noAttendanceData: 'Noch keine Anwesenheitsdaten.', saturdayOnly: 'Bitte wählen Sie einen Samstag.'
     ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name', students: 'Schüler', teachers: 'Lehrer', unreadMessages: 'Ungelesene Nachrichten', unreadAssignments: 'Ungelesene Aufgaben', recipientType: 'Senden an', everyone: 'Alle', groupRecipient: 'Gruppe', teacherRecipient: 'Lehrer', parentRecipient: 'Elternteil', individualRecipient: 'Einzelnen Elternteil', recipient: 'Empfänger', selectRecipient: 'Empfänger auswählen', messageSent: 'Nachricht gesendet.', noRecords: 'Noch keine Einträge.', existingGroups: 'Bestehende Gruppen', noGroups: 'Noch keine Gruppen erstellt.', edit: 'Bearbeiten', deleteAction: 'Löschen', updateGroup: 'Gruppe aktualisieren', groupUpdated: 'Gruppe aktualisiert.', groupDeleted: 'Gruppe gelöscht.', cancelEdit: 'Bearbeitung abbrechen', confirmDeleteGroup: 'Diese Gruppe löschen? Dies kann nicht rückgängig gemacht werden.', sentOn: 'Gesendet', inbox: 'Posteingang', sent: 'Gesendet', back: 'Zurück'
     ,consentGuardian: 'Ich bestätige, dass ich der Elternteil oder Erziehungsberechtigte des anzumeldenden Kindes bin.'
+    ,consentTeacherRole: 'Ich bestätige, dass ich ein Lehrer oder Mitarbeiter der Badr Moschee Schule bin.'
     ,consentData: 'Ich stimme zu, dass Name, Anwesenheitsaufzeichnungen und Hausaufgabendaten meines Kindes von der Badr Moschee Schule in Deutschland zu schulverwaltungszwecken gespeichert werden. Ich weiß, dass ich diese Einwilligung jederzeit widerrufen kann.'
+    ,consentTeacherData: 'Ich stimme zu, dass mein Name und meine Kontaktdaten von der Badr Moschee Schule in Deutschland zu schulverwaltungszwecken gespeichert werden. Ich weiß, dass ich diese Einwilligung jederzeit widerrufen kann.'
     ,consentPolicy: 'Ich habe die Datenschutzerklärung gelesen und verstanden und stimme den Teilnahmebedingungen zu.'
     ,consentRequired: 'Alle drei Einwilligungskästchen müssen angekreuzt werden, um ein Konto zu erstellen.'
     ,privacyTitle: 'Datenschutzerklärung'
@@ -233,7 +237,9 @@ const translations: Record<Locale, Record<string, string>> = {
     ,approvals: 'الموافقات', groups: 'المجموعات', pendingParents: 'حسابات أولياء الأمور المعلقة', approve: 'موافقة', approved: 'تمت الموافقة على الحساب', approvalError: 'تعذر تحديث الحساب.', eventTitle: 'عنوان الفعالية', eventDate: 'تاريخ الفعالية', eventAudience: 'الجمهور', allSchool: 'الجميع', createEvent: 'إنشاء فعالية', eventCreated: 'تم إنشاء الفعالية.', group: 'المجموعة', studentId: 'معرف الطالب', studentName: 'اسم الطالب', assignmentTitle: 'عنوان الواجب', description: 'الوصف', dueDate: 'تاريخ التسليم', createAssignment: 'نشر الواجب', assignmentCreated: 'تم نشر الواجب', attendanceStatus: 'الحالة', present: 'حاضر', absent: 'غائب', late: 'متأخر', saveAttendance: 'حفظ الحضور', attendanceSaved: 'تم حفظ الحضور', loginButton: 'تسجيل الدخول', signupButton: 'إنشاء حساب', chooseAccountType: 'اختر نوع الحساب', accountType: 'نوع الحساب', signupNote: 'تحتاج جميع الحسابات الجديدة إلى موافقة الإدارة.', accountCreated: 'تم إنشاء الحساب. يرجى انتظار موافقة الإدارة.', groupId: 'معرف المجموعة', subject: 'المادة', level: 'المستوى', teacherUid: 'معرف المعلم', studentIds: 'الطلاب', schedule: 'الجدول الأسبوعي', createGroup: 'إنشاء مجموعة', groupCreated: 'تم إنشاء المجموعة وتعيينها.', attended: 'حاضر', markAttendance: 'تسجيل حضور السبت', attendanceDate: 'تاريخ الحصة', attendanceSummary: 'ملخص الحضور', attendanceRate: 'نسبة الحضور', viewHistory: 'عرض سجل الطالب', history: 'السجل', noAttendanceData: 'لا توجد بيانات حضور بعد.', saturdayOnly: 'يرجى اختيار يوم السبت.'
     ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل', students: 'الطلاب', teachers: 'المعلمون', unreadMessages: 'الرسائل غير المقروءة', unreadAssignments: 'الواجبات غير المقروءة', recipientType: 'إرسال إلى', everyone: 'الجميع', groupRecipient: 'مجموعة', teacherRecipient: 'معلم', parentRecipient: 'ولي أمر', individualRecipient: 'ولي أمر محدد', recipient: 'المستلم', selectRecipient: 'اختر المستلم', messageSent: 'تم إرسال الرسالة.', noRecords: 'لا توجد سجلات بعد.', existingGroups: 'المجموعات الحالية', noGroups: 'لم يتم إنشاء أي مجموعات بعد.', edit: 'تعديل', deleteAction: 'حذف', updateGroup: 'تحديث المجموعة', groupUpdated: 'تم تحديث المجموعة.', groupDeleted: 'تم حذف المجموعة.', cancelEdit: 'إلغاء التعديل', confirmDeleteGroup: 'حذف هذه المجموعة؟ لا يمكن التراجع عن هذا.', sentOn: 'أُرسل في', inbox: 'الوارد', sent: 'المرسلة', back: 'رجوع'
     ,consentGuardian: 'أؤكد أنني ولي أمر الطفل المسجَّل أو أحد والديه.'
+    ,consentTeacherRole: 'أؤكد أنني معلم أو موظف في المدرسة العربية بمسجد بدر.'
     ,consentData: 'أوافق على تخزين اسم طفلي وسجلات حضوره وبيانات واجباته المدرسية من قِبل المدرسة العربية بمسجد بدر في ألمانيا لأغراض الإدارة التعليمية. أفهم أن بإمكاني سحب هذه الموافقة في أي وقت عبر التواصل مع المدرسة.'
+    ,consentTeacherData: 'أوافق على تخزين اسمي وبيانات الاتصال الخاصة بي من قِبل المدرسة العربية بمسجد بدر في ألمانيا لأغراض الإدارة التعليمية. أفهم أن بإمكاني سحب هذه الموافقة في أي وقت.'
     ,consentPolicy: 'لقد قرأت سياسة الخصوصية وفهمتها، وأوافق على شروط المشاركة.'
     ,consentRequired: 'يجب تحديد جميع خانات الموافقة الثلاث لإنشاء حساب.'
     ,privacyTitle: 'سياسة الخصوصية — Datenschutzerklärung'
@@ -338,14 +344,14 @@ function App() {
     const loadDashboardData = async () => {
       try {
         const [userSnapshot, groupSnapshot, studentSnapshot, messageSnapshot] = await Promise.all([
-          getDocs(query(collection(db, 'users'), where('status', '==', 'active'))),
-          role === 'admin' ? getDocs(collection(db, 'groups')) : Promise.all(assignedGroupIds.map((groupId) => getDoc(doc(db, 'groups', groupId)))),
+          getDocs(query(collection(db, 'users'), where('status', '==', 'active'))).catch(() => ({ docs: [] })),
+          role === 'admin' ? getDocs(collection(db, 'groups')).catch(() => ({ docs: [] })) : Promise.all(assignedGroupIds.map((groupId) => getDoc(doc(db, 'groups', groupId)).catch(() => null))),
           role === 'admin'
-            ? getDocs(collection(db, 'students')).then((snapshot) => snapshot.docs)
+            ? getDocs(collection(db, 'students')).then((snapshot) => snapshot.docs).catch(() => [])
             : role === 'parent'
-              ? getExistingDocs('students', linkedChildIds)
+              ? getExistingDocs('students', linkedChildIds).catch(() => [])
               : Promise.resolve([]),
-          getDocs(query(collection(db, 'messages'), where('participants', 'array-contains', user.uid))),
+          getDocs(query(collection(db, 'messages'), where('participants', 'array-contains', user.uid))).catch(() => ({ docs: [] })),
         ]);
         if (cancelled) return;
 
@@ -355,11 +361,11 @@ function App() {
           email: item.data().email || '',
           role: item.data().role as Role
         }));
-        const groupDocs = Array.isArray(groupSnapshot) ? groupSnapshot.filter((item) => item.exists()) : groupSnapshot.docs;
+        const groupDocs = Array.isArray(groupSnapshot) ? groupSnapshot.filter((item) => item && item.exists()) : groupSnapshot.docs;
         const groups: DirectoryGroup[] = groupDocs.map((item) => ({
-          id: item.id,
-          name: `${item.data().subject || 'Group'} · ${item.data().level || ''}`,
-          studentIds: item.data().studentIds || []
+          id: item!.id,
+          name: `${item!.data()?.subject || 'Group'} · ${item!.data()?.level || ''}`,
+          studentIds: item!.data()?.studentIds || []
         }));
         const parentGroups = new Map<string, DirectoryGroup>();
         if (role === 'parent' && Array.isArray(studentSnapshot)) {
@@ -1028,7 +1034,7 @@ function App() {
             </div>
             {role !== 'parent' && (
               <div className="metrics">
-                <div><strong>{dashboardCounts.teachers}</strong><span>{t.teachers}</span></div>
+                {role === 'admin' && <div><strong>{dashboardCounts.teachers}</strong><span>{t.teachers}</span></div>}
                 <div><strong>{dashboardCounts.students}</strong><span>{t.students}</span></div>
                 <div><strong>{dashboardCounts.groups}</strong><span>{t.groups}</span></div>
               </div>
@@ -1042,7 +1048,7 @@ function App() {
             </div>
           </div>
 
-          {activeSection !== 'messages' && activeSection !== 'attendance' && (
+          {['dashboard', 'calendar', 'assignments'].includes(activeSection) && (
             <article className="detail-card">
               <div className="detail-card-heading">
                 <div>
@@ -1369,11 +1375,11 @@ function App() {
                         <legend className="consent-legend">⚖️ {t.privacyTitle}</legend>
                         <label className="consent-item">
                           <input type="checkbox" checked={consentGuardian} onChange={(e) => setConsentGuardian(e.target.checked)} required />
-                          <span>{t.consentGuardian}</span>
+                          <span>{signupRole === 'teacher' ? t.consentTeacherRole : t.consentGuardian}</span>
                         </label>
                         <label className="consent-item">
                           <input type="checkbox" checked={consentData} onChange={(e) => setConsentData(e.target.checked)} required />
-                          <span>{t.consentData}</span>
+                          <span>{signupRole === 'teacher' ? t.consentTeacherData : t.consentData}</span>
                         </label>
                         <label className="consent-item">
                           <input type="checkbox" checked={consentPolicy} onChange={(e) => setConsentPolicy(e.target.checked)} required />

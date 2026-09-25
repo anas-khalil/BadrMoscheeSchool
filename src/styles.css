@@ -1214,8 +1214,8 @@ a { color: var(--brass-600); }
 
   .login-modal {
     width: min(100%, 460px);
-    max-height: none;
-    overflow-y: visible;
+    max-height: calc(100vh - var(--space-5) * 2);
+    overflow-y: auto;
     padding: var(--space-8) var(--space-6);
     padding-bottom: var(--space-8);
     border-radius: var(--radius-lg);
