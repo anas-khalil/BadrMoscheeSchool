@@ -46,29 +46,13 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // A profile is readable only by its owner or an admin. Do NOT widen
-      // this to "any active user" — a full-document read leaks
-      // linkedChildIds/assignedGroupIds to anyone signed in. The public
-      // messaging directory below (directory/{userId}) is the
-      // deliberately-minimal collection this comment used to ask for.
       allow read: if isSignedIn() && (userId == request.auth.uid || isAdmin());
 
-      // Self-signup may create a pending PARENT or TEACHER account only.
-      // Admin accounts must be created or promoted by an existing admin (the
-      // very first admin is bootstrapped manually in Firebase Console, per
-      // the README). isAdmin()/isTeacher() do not grant anything until
-      // `status` is flipped to 'active' by an admin, so allowing 'teacher'
-      // here does not grant teacher privileges at signup time — do not
-      // add 'admin' to this list.
       allow create: if isAdmin()
         || (isSignedIn() && userId == request.auth.uid
             && request.resource.data.role in ['parent', 'teacher']
             && request.resource.data.status == 'pending');
 
-      // A user may edit their own profile (e.g. name/language), but can
-      // NEVER change their own role/status/linkedChildIds/assignedGroupIds —
-      // those are the fields that grant access, and only an admin may touch
-      // them.
       allow update: if isAdmin()
         || (isSignedIn() && userId == request.auth.uid
             && !request.resource.data.diff(resource.data).affectedKeys()
@@ -77,14 +61,20 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Minimal, non-sensitive profile (name + role only) so any signed-in
-    // user can build a messaging recipient list, without exposing the
-    // protected fields on users/{uid} (linkedChildIds, assignedGroupIds,
-    // email, status). Only admins write it, at approval time (and for the
-    // first, manually-bootstrapped admin — see README).
+    // Minimal, non-sensitive profile (name + role only) used to build
+    // recipient lists. Active users may maintain only their own entry;
+    // admins can maintain any entry. No email, child links, group IDs, or
+    // account status are exposed here.
     match /directory/{userId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow create, update: if isAdmin()
+        || (isSignedIn() && userId == request.auth.uid
+            && hasUserDoc()
+            && userDoc().status == 'active'
+            && request.resource.data.keys().hasOnly(['name', 'role'])
+            && request.resource.data.role == userDoc().role
+            && request.resource.data.name == (userDoc().name != null ? userDoc().name : request.auth.token.email));
+      allow delete: if isAdmin();
     }
 
     match /students/{studentId} {
@@ -111,7 +101,7 @@ service cloud.firestore {
         (teacherHasGroup(request.resource.data.groupId) &&
          request.resource.data.teacherId == request.auth.uid);
       allow update: if isAdmin() ||
-        (teacherHasGroup(resource.data.groupId) && 
+        (teacherHasGroup(resource.data.groupId) &&
          teacherHasGroup(request.resource.data.groupId) &&
          request.resource.data.teacherId == request.auth.uid);
       allow delete: if isAdmin() ||
@@ -130,7 +120,7 @@ service cloud.firestore {
         (teacherHasGroup(request.resource.data.groupId) &&
          request.resource.data.teacherId == request.auth.uid);
       allow update: if isAdmin() ||
-        (teacherHasGroup(resource.data.groupId) && 
+        (teacherHasGroup(resource.data.groupId) &&
          teacherHasGroup(request.resource.data.groupId) &&
          request.resource.data.teacherId == request.auth.uid);
       allow delete: if isAdmin() ||
@@ -148,7 +138,7 @@ service cloud.firestore {
         (teacherHasGroup(request.resource.data.groupId) &&
          request.resource.data.teacherId == request.auth.uid);
       allow update: if isAdmin() ||
-        (teacherHasGroup(resource.data.groupId) && 
+        (teacherHasGroup(resource.data.groupId) &&
          teacherHasGroup(request.resource.data.groupId) &&
          request.resource.data.teacherId == request.auth.uid);
       allow delete: if isAdmin() ||
