@@ -43,7 +43,7 @@ function buildGroupAttendance(groups: Array<{ id: string; name: string }>, recor
 type Locale = 'en' | 'de' | 'ar';
 
 type Role = 'admin' | 'teacher' | 'parent';
-type Section = 'dashboard' | 'calendar' | 'messages' | 'attendance' | 'assignments' | 'approvals' | 'groups';
+type Section = 'dashboard' | 'calendar' | 'messages' | 'attendance' | 'assignments' | 'approvals' | 'groups' | 'privacy';
 
 type LiveItem = {
   id: string;
@@ -91,7 +91,7 @@ const translations: Record<Locale, Record<string, string>> = {
     messages: 'Messages',
     attendance: 'Attendance',
     assignments: 'Assignments',
-    privacy: '',
+    privacy: 'Privacy Policy',
     login: 'Login',
     logout: 'Logout',
     language: 'Language',
@@ -116,6 +116,28 @@ const translations: Record<Locale, Record<string, string>> = {
     pendingNote: 'Your account is pending admin approval.'
     ,approvals: 'Approvals', groups: 'Groups', pendingParents: 'Pending parent accounts', approve: 'Approve', approved: 'Parent approved', approvalError: 'Could not update this account.', eventTitle: 'Event title', eventDate: 'Event date', eventAudience: 'Audience', allSchool: 'Everyone', createEvent: 'Create event', eventCreated: 'Event created.', group: 'Group', studentId: 'Student ID', studentName: 'Student name', assignmentTitle: 'Assignment title', description: 'Description', dueDate: 'Due date', createAssignment: 'Post assignment', assignmentCreated: 'Assignment posted', attendanceStatus: 'Status', present: 'Present', absent: 'Absent', late: 'Late', saveAttendance: 'Save attendance', attendanceSaved: 'Attendance saved', loginButton: 'Login', signupButton: 'Sign up', chooseAccountType: 'Choose account type', accountType: 'Account type', signupNote: 'All new accounts require admin approval.', accountCreated: 'Account created. Please wait for admin approval.', groupId: 'Group ID', subject: 'Subject', level: 'Level', teacherUid: 'Teacher UID', studentIds: 'Students', schedule: 'Weekly schedule', createGroup: 'Create group', groupCreated: 'Group created and assigned.', attended: 'Attended', markAttendance: 'Mark Saturday attendance', attendanceDate: 'Session date', attendanceSummary: 'Attendance summary', attendanceRate: 'Attendance rate', viewHistory: 'View student history', history: 'History', noAttendanceData: 'No attendance data yet.', saturdayOnly: 'Please choose a Saturday.', messageText: 'Message', sendMessage: 'Send message', noRecords: 'No records yet.', existingGroups: 'Existing groups', noGroups: 'No groups created yet.', edit: 'Edit', deleteAction: 'Delete', updateGroup: 'Update group', groupUpdated: 'Group updated.', groupDeleted: 'Group deleted.', cancelEdit: 'Cancel edit', confirmDeleteGroup: 'Delete this group? This cannot be undone.', sentOn: 'Sent', inbox: 'Inbox', sent: 'Sent', back: 'Back'
     ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child', name: 'Full name', students: 'Students', teachers: 'Teachers', unreadMessages: 'Unread messages', unreadAssignments: 'Unread assignments', recipientType: 'Send to', everyone: 'Everyone', groupRecipient: 'Group', teacherRecipient: 'Teacher', parentRecipient: 'Parent', individualRecipient: 'Individual parent', recipient: 'Recipient', selectRecipient: 'Select recipient', messageSent: 'Message sent.'
+    ,consentGuardian: 'I confirm that I am the parent or legal guardian of the child being registered.'
+    ,consentData: "I consent to my child's name, attendance records, and homework data being stored by Badr Mosque School in Germany for educational administration purposes. I understand I may withdraw this consent at any time by contacting the school."
+    ,consentPolicy: 'I have read and understood the Privacy Policy and agree to the Terms of Participation.'
+    ,consentRequired: 'All three consent checkboxes are required to create an account.'
+    ,privacyTitle: 'Privacy Policy — Datenschutzerklärung'
+    ,privacyController: 'Data Controller'
+    ,privacyControllerText: 'Badr Mosque Arabic School, Aschaffenburg, Germany. Contact: school administration via the Messages section of this app.'
+    ,privacyDataCollected: 'Data Collected'
+    ,privacyDataText: "We collect: full name of the child, date of registration, attendance records (present / absent / late per session), homework assignment records, and the parent or guardian's name and email address."
+    ,privacyLegalBasis: 'Legal Basis (GDPR)'
+    ,privacyLegalText: 'Processing is based on the explicit consent of the parent or legal guardian (GDPR Art. 6(1)(a) and Art. 8). Consent is provided at registration and may be withdrawn at any time without consequences.'
+    ,privacyStorage: 'Data Storage'
+    ,privacyStorageText: 'All data is stored in Google Firebase Firestore with the data centre located in Frankfurt, Germany (europe-west3 region). Data does not leave the European Union.'
+    ,privacyRetention: 'Data Retention'
+    ,privacyRetentionText: "Personal data is retained for the duration of the child's enrolment plus a maximum of 6 months after leaving the school. Upon request, data will be permanently deleted."
+    ,privacyRights: 'Your Rights (GDPR Art. 15–20)'
+    ,privacyRightsText: "You have the right to access, correct, delete, or export your data at any time. You may also withdraw consent without affecting your child's continued participation. Contact the school administration via the Messages section to exercise these rights."
+    ,privacyThirdParty: 'Third Parties'
+    ,privacyThirdPartyText: 'We use Google Firebase as our technical infrastructure provider (data processor). No data is sold, shared with advertisers, or disclosed to any third party. Google operates under a GDPR-compliant Data Processing Agreement with standard contractual clauses.'
+    ,privacyComplaint: 'Right to Lodge a Complaint'
+    ,privacyComplaintText: 'You have the right to complain to the Hessian Data Protection Authority (Hessischer Beauftragter für Datenschutz und Informationsfreiheit — HBDI): www.datenschutz.hessen.de · Gustav-Stresemann-Ring 1, 65189 Wiesbaden.'
+    ,privacyLastUpdated: 'Last updated: September 2026'
   },
   de: {
     appTitle: 'Badr Moschee Schule',
@@ -127,7 +149,7 @@ const translations: Record<Locale, Record<string, string>> = {
     messages: 'Nachrichten',
     attendance: 'Anwesenheit',
     assignments: 'Aufgaben',
-    privacy: '',
+    privacy: 'Datenschutzerklärung',
     login: 'Anmelden',
     logout: 'Abmelden',
     language: 'Sprache',
@@ -152,6 +174,28 @@ const translations: Record<Locale, Record<string, string>> = {
     pendingNote: 'Ihr Konto wartet auf die Genehmigung durch die Verwaltung.'
     ,approvals: 'Genehmigungen', groups: 'Gruppen', pendingParents: 'Ausstehende Elternkonten', approve: 'Genehmigen', approved: 'Elternkonto genehmigt', approvalError: 'Konto konnte nicht aktualisiert werden.', eventTitle: 'Veranstaltungstitel', eventDate: 'Veranstaltungsdatum', eventAudience: 'Zielgruppe', allSchool: 'Alle', createEvent: 'Veranstaltung erstellen', eventCreated: 'Veranstaltung erstellt.', group: 'Gruppe', studentId: 'Schüler-ID', studentName: 'Name des Schülers', assignmentTitle: 'Aufgabentitel', description: 'Beschreibung', dueDate: 'Fälligkeitsdatum', createAssignment: 'Aufgabe veröffentlichen', assignmentCreated: 'Aufgabe veröffentlicht', attendanceStatus: 'Status', present: 'Anwesend', absent: 'Abwesend', late: 'Verspätet', saveAttendance: 'Anwesenheit speichern', attendanceSaved: 'Anwesenheit gespeichert', loginButton: 'Anmelden', signupButton: 'Registrieren', chooseAccountType: 'Kontotyp auswählen', accountType: 'Kontotyp', signupNote: 'Alle neuen Konten benötigen eine Genehmigung.', accountCreated: 'Konto erstellt. Bitte warten Sie auf die Genehmigung.', groupId: 'Gruppen-ID', subject: 'Fach', level: 'Stufe', teacherUid: 'Lehrer-UID', studentIds: 'Schüler', schedule: 'Wochenplan', createGroup: 'Gruppe erstellen', groupCreated: 'Gruppe erstellt und zugewiesen.', attended: 'Anwesend', markAttendance: 'Samstagsanwesenheit erfassen', attendanceDate: 'Unterrichtsdatum', attendanceSummary: 'Anwesenheitsübersicht', attendanceRate: 'Anwesenheitsquote', viewHistory: 'Schülerverlauf anzeigen', history: 'Verlauf', noAttendanceData: 'Noch keine Anwesenheitsdaten.', saturdayOnly: 'Bitte wählen Sie einen Samstag.'
     ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name', students: 'Schüler', teachers: 'Lehrer', unreadMessages: 'Ungelesene Nachrichten', unreadAssignments: 'Ungelesene Aufgaben', recipientType: 'Senden an', everyone: 'Alle', groupRecipient: 'Gruppe', teacherRecipient: 'Lehrer', parentRecipient: 'Elternteil', individualRecipient: 'Einzelnen Elternteil', recipient: 'Empfänger', selectRecipient: 'Empfänger auswählen', messageSent: 'Nachricht gesendet.', noRecords: 'Noch keine Einträge.', existingGroups: 'Bestehende Gruppen', noGroups: 'Noch keine Gruppen erstellt.', edit: 'Bearbeiten', deleteAction: 'Löschen', updateGroup: 'Gruppe aktualisieren', groupUpdated: 'Gruppe aktualisiert.', groupDeleted: 'Gruppe gelöscht.', cancelEdit: 'Bearbeitung abbrechen', confirmDeleteGroup: 'Diese Gruppe löschen? Dies kann nicht rückgängig gemacht werden.', sentOn: 'Gesendet', inbox: 'Posteingang', sent: 'Gesendet', back: 'Zurück'
+    ,consentGuardian: 'Ich bestätige, dass ich der Elternteil oder Erziehungsberechtigte des anzumeldenden Kindes bin.'
+    ,consentData: 'Ich stimme zu, dass Name, Anwesenheitsaufzeichnungen und Hausaufgabendaten meines Kindes von der Badr Moschee Schule in Deutschland zu schulverwaltungszwecken gespeichert werden. Ich weiß, dass ich diese Einwilligung jederzeit widerrufen kann.'
+    ,consentPolicy: 'Ich habe die Datenschutzerklärung gelesen und verstanden und stimme den Teilnahmebedingungen zu.'
+    ,consentRequired: 'Alle drei Einwilligungskästchen müssen angekreuzt werden, um ein Konto zu erstellen.'
+    ,privacyTitle: 'Datenschutzerklärung'
+    ,privacyController: 'Verantwortlicher'
+    ,privacyControllerText: 'Arabische Schule der Badr Moschee, Aschaffenburg, Deutschland. Kontakt: Schulverwaltung über den Nachrichtenbereich dieser App.'
+    ,privacyDataCollected: 'Erhobene Daten'
+    ,privacyDataText: 'Wir erheben: vollständiger Name des Kindes, Anmeldedatum, Anwesenheitsaufzeichnungen (anwesend / abwesend / verspätet je Unterrichtsstunde), Hausaufgabenaufzeichnungen sowie Name und E-Mail-Adresse des Elternteils oder Erziehungsberechtigten.'
+    ,privacyLegalBasis: 'Rechtsgrundlage (DSGVO)'
+    ,privacyLegalText: 'Die Verarbeitung erfolgt auf Grundlage der ausdrücklichen Einwilligung des Elternteils oder Erziehungsberechtigten (DSGVO Art. 6 Abs. 1 lit. a und Art. 8). Die Einwilligung wird bei der Anmeldung erteilt und kann jederzeit ohne Nachteile widerrufen werden.'
+    ,privacyStorage: 'Datenspeicherung'
+    ,privacyStorageText: 'Alle Daten werden in Google Firebase Firestore gespeichert. Das Rechenzentrum befindet sich in Frankfurt am Main, Deutschland (Region europe-west3). Die Daten verlassen nicht die Europäische Union.'
+    ,privacyRetention: 'Aufbewahrungsdauer'
+    ,privacyRetentionText: 'Personenbezogene Daten werden für die Dauer der Schulzugehörigkeit des Kindes sowie maximal 6 Monate nach dem Austritt aufbewahrt und anschließend dauerhaft gelöscht.'
+    ,privacyRights: 'Ihre Rechte (DSGVO Art. 15–20)'
+    ,privacyRightsText: 'Sie haben das Recht auf Auskunft, Berichtigung, Löschung oder Datenübertragbarkeit Ihrer Daten. Sie können Ihre Einwilligung jederzeit widerrufen, ohne dass dies die Schulzugehörigkeit Ihres Kindes beeinträchtigt. Wenden Sie sich dazu an die Schulverwaltung über den Nachrichtenbereich.'
+    ,privacyThirdParty: 'Dritte'
+    ,privacyThirdPartyText: 'Wir verwenden Google Firebase als technischen Infrastrukturanbieter (Auftragsverarbeiter). Keine Daten werden verkauft, an Werbetreibende weitergegeben oder an Dritte übermittelt. Google handelt auf Grundlage eines DSGVO-konformen Auftragsverarbeitungsvertrags mit Standardvertragsklauseln.'
+    ,privacyComplaint: 'Beschwerderecht'
+    ,privacyComplaintText: 'Sie haben das Recht, eine Beschwerde beim Hessischen Beauftragten für Datenschutz und Informationsfreiheit (HBDI) einzureichen: www.datenschutz.hessen.de · Gustav-Stresemann-Ring 1, 65189 Wiesbaden.'
+    ,privacyLastUpdated: 'Zuletzt aktualisiert: September 2026'
   },
   ar: {
     appTitle: 'المدرسة العربية بمسجد بدر',
@@ -163,7 +207,7 @@ const translations: Record<Locale, Record<string, string>> = {
     messages: 'الرسائل',
     attendance: 'الحضور',
     assignments: 'الواجبات',
-    privacy: '',
+    privacy: 'سياسة الخصوصية',
     login: 'تسجيل الدخول',
     logout: 'تسجيل الخروج',
     language: 'اللغة',
@@ -188,6 +232,28 @@ const translations: Record<Locale, Record<string, string>> = {
     pendingNote: 'حسابك بانتظار موافقة الإدارة.'
     ,approvals: 'الموافقات', groups: 'المجموعات', pendingParents: 'حسابات أولياء الأمور المعلقة', approve: 'موافقة', approved: 'تمت الموافقة على الحساب', approvalError: 'تعذر تحديث الحساب.', eventTitle: 'عنوان الفعالية', eventDate: 'تاريخ الفعالية', eventAudience: 'الجمهور', allSchool: 'الجميع', createEvent: 'إنشاء فعالية', eventCreated: 'تم إنشاء الفعالية.', group: 'المجموعة', studentId: 'معرف الطالب', studentName: 'اسم الطالب', assignmentTitle: 'عنوان الواجب', description: 'الوصف', dueDate: 'تاريخ التسليم', createAssignment: 'نشر الواجب', assignmentCreated: 'تم نشر الواجب', attendanceStatus: 'الحالة', present: 'حاضر', absent: 'غائب', late: 'متأخر', saveAttendance: 'حفظ الحضور', attendanceSaved: 'تم حفظ الحضور', loginButton: 'تسجيل الدخول', signupButton: 'إنشاء حساب', chooseAccountType: 'اختر نوع الحساب', accountType: 'نوع الحساب', signupNote: 'تحتاج جميع الحسابات الجديدة إلى موافقة الإدارة.', accountCreated: 'تم إنشاء الحساب. يرجى انتظار موافقة الإدارة.', groupId: 'معرف المجموعة', subject: 'المادة', level: 'المستوى', teacherUid: 'معرف المعلم', studentIds: 'الطلاب', schedule: 'الجدول الأسبوعي', createGroup: 'إنشاء مجموعة', groupCreated: 'تم إنشاء المجموعة وتعيينها.', attended: 'حاضر', markAttendance: 'تسجيل حضور السبت', attendanceDate: 'تاريخ الحصة', attendanceSummary: 'ملخص الحضور', attendanceRate: 'نسبة الحضور', viewHistory: 'عرض سجل الطالب', history: 'السجل', noAttendanceData: 'لا توجد بيانات حضور بعد.', saturdayOnly: 'يرجى اختيار يوم السبت.'
     ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل', students: 'الطلاب', teachers: 'المعلمون', unreadMessages: 'الرسائل غير المقروءة', unreadAssignments: 'الواجبات غير المقروءة', recipientType: 'إرسال إلى', everyone: 'الجميع', groupRecipient: 'مجموعة', teacherRecipient: 'معلم', parentRecipient: 'ولي أمر', individualRecipient: 'ولي أمر محدد', recipient: 'المستلم', selectRecipient: 'اختر المستلم', messageSent: 'تم إرسال الرسالة.', noRecords: 'لا توجد سجلات بعد.', existingGroups: 'المجموعات الحالية', noGroups: 'لم يتم إنشاء أي مجموعات بعد.', edit: 'تعديل', deleteAction: 'حذف', updateGroup: 'تحديث المجموعة', groupUpdated: 'تم تحديث المجموعة.', groupDeleted: 'تم حذف المجموعة.', cancelEdit: 'إلغاء التعديل', confirmDeleteGroup: 'حذف هذه المجموعة؟ لا يمكن التراجع عن هذا.', sentOn: 'أُرسل في', inbox: 'الوارد', sent: 'المرسلة', back: 'رجوع'
+    ,consentGuardian: 'أؤكد أنني ولي أمر الطفل المسجَّل أو أحد والديه.'
+    ,consentData: 'أوافق على تخزين اسم طفلي وسجلات حضوره وبيانات واجباته المدرسية من قِبل المدرسة العربية بمسجد بدر في ألمانيا لأغراض الإدارة التعليمية. أفهم أن بإمكاني سحب هذه الموافقة في أي وقت عبر التواصل مع المدرسة.'
+    ,consentPolicy: 'لقد قرأت سياسة الخصوصية وفهمتها، وأوافق على شروط المشاركة.'
+    ,consentRequired: 'يجب تحديد جميع خانات الموافقة الثلاث لإنشاء حساب.'
+    ,privacyTitle: 'سياسة الخصوصية — Datenschutzerklärung'
+    ,privacyController: 'المتحكم في البيانات'
+    ,privacyControllerText: 'المدرسة العربية بمسجد بدر، أشافنبورغ، ألمانيا. للتواصل: إدارة المدرسة عبر قسم الرسائل في هذا التطبيق.'
+    ,privacyDataCollected: 'البيانات المجمَّعة'
+    ,privacyDataText: 'نجمع: الاسم الكامل للطفل، وتاريخ التسجيل، وسجلات الحضور (حاضر / غائب / متأخر لكل حصة)، وسجلات الواجبات، واسم ولي الأمر وعنوان بريده الإلكتروني.'
+    ,privacyLegalBasis: 'الأساس القانوني (اللائحة الأوروبية GDPR)'
+    ,privacyLegalText: 'تستند المعالجة إلى الموافقة الصريحة من ولي الأمر (المادة 6(1)(أ) و8 من لائحة GDPR). تُمنح الموافقة عند التسجيل ويمكن سحبها في أي وقت دون أي عواقب.'
+    ,privacyStorage: 'تخزين البيانات'
+    ,privacyStorageText: 'تُخزَّن جميع البيانات في Google Firebase Firestore في مركز البيانات المقع في فرانكفورت، ألمانيا (منطقة europe-west3). لا تغادر البيانات الاتحاد الأوروبي.'
+    ,privacyRetention: 'مدة الاحتفاظ بالبيانات'
+    ,privacyRetentionText: 'تُحتفظ بالبيانات الشخصية طوال فترة التحاق الطفل بالمدرسة وحتى 6 أشهر بعد مغادرته، ثم تُحذف نهائياً عند الطلب أو تلقائياً.'
+    ,privacyRights: 'حقوقك (المواد 15–20 من GDPR)'
+    ,privacyRightsText: 'يحق لك الاطلاع على بياناتك وتصحيحها وحذفها أو نقلها في أي وقت. يمكنك سحب موافقتك دون التأثير على مشاركة طفلك. تواصل مع إدارة المدرسة عبر قسم الرسائل لممارسة هذه الحقوق.'
+    ,privacyThirdParty: 'الأطراف الثالثة'
+    ,privacyThirdPartyText: 'نستخدم Google Firebase كمزود تقني للبنية التحتية (معالج البيانات). لا تُباع أي بيانات ولا تُشارك مع المعلنين أو أي طرف ثالث. تعمل Google بموجب اتفاقية معالجة بيانات متوافقة مع لائحة GDPR.'
+    ,privacyComplaint: 'حق تقديم شكوى'
+    ,privacyComplaintText: 'يحق لك تقديم شكوى إلى مفوض حماية البيانات في ولاية هيسن (Hessischer Beauftragter für Datenschutz und Informationsfreiheit — HBDI): www.datenschutz.hessen.de · Gustav-Stresemann-Ring 1, 65189 Wiesbaden.'
+    ,privacyLastUpdated: 'آخر تحديث: سبتمبر 2026'
   }
 };
 
@@ -205,6 +271,9 @@ function App() {
   const [signupStudentName, setSignupStudentName] = useState('');
   const [authError, setAuthError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [consentGuardian, setConsentGuardian] = useState(false);
+  const [consentData, setConsentData] = useState(false);
+  const [consentPolicy, setConsentPolicy] = useState(false);
   const [profileStatus, setProfileStatus] = useState<'pending' | 'active' | null>(null);
   const [profileName, setProfileName] = useState('');
   const [pendingParents, setPendingParents] = useState<Array<{ id: string; email: string; name: string; role: Role; childId: string; requestedChildName: string }>>([]);
@@ -345,6 +414,13 @@ function App() {
   const handleAuthentication = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAuthError('');
+
+    // Consent is required for new account creation
+    if (authMode === 'signup' && (!consentGuardian || !consentData || !consentPolicy)) {
+      setAuthError(t.consentRequired);
+      return;
+    }
+
     setIsAuthenticating(true);
     let createdUser: User | null = null;
 
@@ -362,6 +438,8 @@ function App() {
           role: signupRole,
           status: 'pending',
           language: locale,
+          consentGiven: true,
+          consentDate: new Date().toISOString(),
           ...(signupRole === 'parent' ? { linkedChildIds: [], requestedChildName: signupStudentName.trim() } : {}),
           ...(signupRole === 'teacher' ? { assignedGroupIds: [] } : {}),
           createdAt: new Date().toISOString()
@@ -372,6 +450,9 @@ function App() {
       setSignupName('');
       setSignupStudentName('');
       setSignupRole('parent');
+      setConsentGuardian(false);
+      setConsentData(false);
+      setConsentPolicy(false);
       setAuthMode('login');
       if (authMode === 'signup') setAuthError(t.accountCreated);
       setIsLoginOpen(false);
@@ -922,7 +1003,7 @@ function App() {
           )}
 
           <nav className="nav">
-            {(['dashboard', 'calendar', 'messages', 'attendance', 'assignments', ...(role === 'admin' ? ['approvals', 'groups'] : [])] as Section[]).map((section) => (
+            {(['dashboard', 'calendar', 'messages', 'attendance', 'assignments', ...(role === 'admin' ? ['approvals', 'groups'] : []), 'privacy'] as Section[]).map((section) => (
               <button className={activeSection === section ? 'active' : ''} key={section} type="button" onClick={() => setActiveSection(section)}>
                 {t[section]}
               </button>
@@ -1206,6 +1287,54 @@ function App() {
             </article>
           )}
 
+          {activeSection === 'privacy' && (
+            <article className="detail-card privacy-card">
+              <span className="eyebrow">{t[role]}</span>
+              <h2 className="privacy-title">{t.privacyTitle}</h2>
+              <p className="privacy-updated">{t.privacyLastUpdated}</p>
+
+              <section className="privacy-section">
+                <h3>{t.privacyController}</h3>
+                <p>{t.privacyControllerText}</p>
+              </section>
+
+              <section className="privacy-section">
+                <h3>{t.privacyDataCollected}</h3>
+                <p>{t.privacyDataText}</p>
+              </section>
+
+              <section className="privacy-section">
+                <h3>{t.privacyLegalBasis}</h3>
+                <p>{t.privacyLegalText}</p>
+              </section>
+
+              <section className="privacy-section">
+                <h3>{t.privacyStorage}</h3>
+                <p>{t.privacyStorageText}</p>
+              </section>
+
+              <section className="privacy-section">
+                <h3>{t.privacyRetention}</h3>
+                <p>{t.privacyRetentionText}</p>
+              </section>
+
+              <section className="privacy-section">
+                <h3>{t.privacyRights}</h3>
+                <p>{t.privacyRightsText}</p>
+              </section>
+
+              <section className="privacy-section">
+                <h3>{t.privacyThirdParty}</h3>
+                <p>{t.privacyThirdPartyText}</p>
+              </section>
+
+              <section className="privacy-section privacy-section--complaint">
+                <h3>{t.privacyComplaint}</h3>
+                <p>{t.privacyComplaintText}</p>
+              </section>
+            </article>
+          )}
+
             </>
           )}
         </section>
@@ -1235,6 +1364,22 @@ function App() {
                       <label>{t.accountType}<select value={signupRole} onChange={(event) => setSignupRole(event.target.value as Role)}><option value="parent">{t.parent}</option><option value="teacher">{t.teacher}</option></select></label>
                       <label>{t.name}<input value={signupName} onChange={(event) => setSignupName(event.target.value)} required /></label>
                       {signupRole === 'parent' && <label>{t.studentName}<input value={signupStudentName} onChange={(event) => setSignupStudentName(event.target.value)} required /></label>}
+
+                      <fieldset className="consent-fieldset">
+                        <legend className="consent-legend">⚖️ {t.privacyTitle}</legend>
+                        <label className="consent-item">
+                          <input type="checkbox" checked={consentGuardian} onChange={(e) => setConsentGuardian(e.target.checked)} required />
+                          <span>{t.consentGuardian}</span>
+                        </label>
+                        <label className="consent-item">
+                          <input type="checkbox" checked={consentData} onChange={(e) => setConsentData(e.target.checked)} required />
+                          <span>{t.consentData}</span>
+                        </label>
+                        <label className="consent-item">
+                          <input type="checkbox" checked={consentPolicy} onChange={(e) => setConsentPolicy(e.target.checked)} required />
+                          <span>{t.consentPolicy}</span>
+                        </label>
+                      </fieldset>
                     </>
                   )}
                   <label>{t.email}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>
