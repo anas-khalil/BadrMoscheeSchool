@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
-import { createUserWithEmailAndPassword, deleteUser, getAuth, onAuthStateChanged, signInWithEmailAndPassword, type User } from 'firebase/auth';
+import { createUserWithEmailAndPassword, deleteUser, getAuth, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, type User } from 'firebase/auth';
 import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { registerSW } from 'virtual:pwa-register';
-import { sendParentApprovedEmail } from './emailNotifications';
+import { queueEmailNotification } from './emailNotifications';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -113,7 +113,7 @@ const translations: Record<Locale, Record<string, string>> = {
     createAccount: 'Create Account',
     switchToSignup: 'Need an account? Sign up',
     switchToLogin: 'Already registered? Sign in',
-    authError: 'Unable to complete authentication. Check your details and try again.',
+    authError: 'Unable to complete authentication. Check your details and try again.', forgotPassword: 'Forgot password?', passwordResetSent: 'Password reset email sent.',
     pendingNote: 'Your account is pending admin approval.'
     ,approvals: 'Approvals', groups: 'Groups', pendingParents: 'Pending parent accounts', approve: 'Approve', approved: 'Parent approved', approvalError: 'Could not update this account.', approvalEmailFailed: 'The account was approved, but the email notification could not be sent.', eventTitle: 'Event title', eventDate: 'Event date', eventAudience: 'Audience', allSchool: 'Everyone', createEvent: 'Create event', eventCreated: 'Event created.', group: 'Group', studentId: 'Student ID', studentName: 'Student name', assignmentTitle: 'Assignment title', description: 'Description', dueDate: 'Due date', createAssignment: 'Post assignment', assignmentCreated: 'Assignment posted', attendanceStatus: 'Status', present: 'Present', absent: 'Absent', late: 'Late', saveAttendance: 'Save attendance', attendanceSaved: 'Attendance saved', loginButton: 'Login', signupButton: 'Sign up', chooseAccountType: 'Choose account type', accountType: 'Account type', signupNote: 'All new accounts require admin approval.', accountCreated: 'Account created. Please wait for admin approval.', groupId: 'Group ID', subject: 'Subject', level: 'Level', teacherUid: 'Teacher UID', studentIds: 'Students', schedule: 'Weekly schedule', createGroup: 'Create group', groupCreated: 'Group created and assigned.', attended: 'Attended', markAttendance: 'Mark Saturday attendance', attendanceDate: 'Session date', attendanceSummary: 'Attendance summary', attendanceRate: 'Attendance rate', viewHistory: 'View student history', history: 'History', noAttendanceData: 'No attendance data yet.', saturdayOnly: 'Please choose a Saturday.', messageText: 'Message', sendMessage: 'Send message', noRecords: 'No records yet.', existingGroups: 'Existing groups', noGroups: 'No groups created yet.', edit: 'Edit', deleteAction: 'Delete', updateGroup: 'Update group', groupUpdated: 'Group updated.', groupDeleted: 'Group deleted.', cancelEdit: 'Cancel edit', confirmDeleteGroup: 'Delete this group? This cannot be undone.', sentOn: 'Sent', inbox: 'Inbox', sent: 'Sent', back: 'Back'
     ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child', name: 'Full name', students: 'Students', teachers: 'Teachers', unreadMessages: 'Unread messages', unreadAssignments: 'Unread assignments', recipientType: 'Send to', everyone: 'Everyone', groupRecipient: 'Group', teacherRecipient: 'Teacher', parentRecipient: 'Parent', individualRecipient: 'Individual parent', recipient: 'Recipient', selectRecipient: 'Select recipient', messageSent: 'Message sent.'
@@ -173,7 +173,7 @@ const translations: Record<Locale, Record<string, string>> = {
     createAccount: 'Konto erstellen',
     switchToSignup: 'Noch kein Konto? Registrieren',
     switchToLogin: 'Bereits registriert? Anmelden',
-    authError: 'Anmeldung nicht möglich. Bitte Daten prüfen und erneut versuchen.',
+    authError: 'Anmeldung nicht möglich. Bitte Daten prüfen und erneut versuchen.', forgotPassword: 'Passwort vergessen?', passwordResetSent: 'E-Mail zum Zurücksetzen des Passworts wurde gesendet.',
     pendingNote: 'Ihr Konto wartet auf die Genehmigung durch die Verwaltung.'
     ,approvals: 'Genehmigungen', groups: 'Gruppen', pendingParents: 'Ausstehende Elternkonten', approve: 'Genehmigen', approved: 'Elternkonto genehmigt', approvalError: 'Konto konnte nicht aktualisiert werden.', approvalEmailFailed: 'Das Konto wurde genehmigt, aber die E-Mail-Benachrichtigung konnte nicht gesendet werden.', eventTitle: 'Veranstaltungstitel', eventDate: 'Veranstaltungsdatum', eventAudience: 'Zielgruppe', allSchool: 'Alle', createEvent: 'Veranstaltung erstellen', eventCreated: 'Veranstaltung erstellt.', group: 'Gruppe', studentId: 'Schüler-ID', studentName: 'Name des Schülers', assignmentTitle: 'Aufgabentitel', description: 'Beschreibung', dueDate: 'Fälligkeitsdatum', createAssignment: 'Aufgabe veröffentlichen', assignmentCreated: 'Aufgabe veröffentlicht', attendanceStatus: 'Status', present: 'Anwesend', absent: 'Abwesend', late: 'Verspätet', saveAttendance: 'Anwesenheit speichern', attendanceSaved: 'Anwesenheit gespeichert', loginButton: 'Anmelden', signupButton: 'Registrieren', chooseAccountType: 'Kontotyp auswählen', accountType: 'Kontotyp', signupNote: 'Alle neuen Konten benötigen eine Genehmigung.', accountCreated: 'Konto erstellt. Bitte warten Sie auf die Genehmigung.', groupId: 'Gruppen-ID', subject: 'Fach', level: 'Stufe', teacherUid: 'Lehrer-UID', studentIds: 'Schüler', schedule: 'Wochenplan', createGroup: 'Gruppe erstellen', groupCreated: 'Gruppe erstellt und zugewiesen.', attended: 'Anwesend', markAttendance: 'Samstagsanwesenheit erfassen', attendanceDate: 'Unterrichtsdatum', attendanceSummary: 'Anwesenheitsübersicht', attendanceRate: 'Anwesenheitsquote', viewHistory: 'Schülerverlauf anzeigen', history: 'Verlauf', noAttendanceData: 'Noch keine Anwesenheitsdaten.', saturdayOnly: 'Bitte wählen Sie einen Samstag.'
     ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name', students: 'Schüler', teachers: 'Lehrer', unreadMessages: 'Ungelesene Nachrichten', unreadAssignments: 'Ungelesene Aufgaben', recipientType: 'Senden an', everyone: 'Alle', groupRecipient: 'Gruppe', teacherRecipient: 'Lehrer', parentRecipient: 'Elternteil', individualRecipient: 'Einzelnen Elternteil', recipient: 'Empfänger', selectRecipient: 'Empfänger auswählen', messageSent: 'Nachricht gesendet.', sendMessage: 'Nachricht senden', noRecords: 'Noch keine Einträge.', existingGroups: 'Bestehende Gruppen', noGroups: 'Noch keine Gruppen erstellt.', edit: 'Bearbeiten', deleteAction: 'Löschen', updateGroup: 'Gruppe aktualisieren', groupUpdated: 'Gruppe aktualisiert.', groupDeleted: 'Gruppe gelöscht.', cancelEdit: 'Bearbeitung abbrechen', confirmDeleteGroup: 'Diese Gruppe löschen? Dies kann nicht rückgängig gemacht werden.', sentOn: 'Gesendet', inbox: 'Posteingang', sent: 'Gesendet', back: 'Zurück'
@@ -233,7 +233,7 @@ const translations: Record<Locale, Record<string, string>> = {
     createAccount: 'إنشاء الحساب',
     switchToSignup: 'ليس لديك حساب؟ سجل الآن',
     switchToLogin: 'لديك حساب؟ سجل الدخول',
-    authError: 'تعذر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.',
+    authError: 'تعذر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.', forgotPassword: 'نسيت كلمة المرور؟', passwordResetSent: 'تم إرسال رسالة إعادة تعيين كلمة المرور.',
     pendingNote: 'حسابك بانتظار موافقة الإدارة.'
     ,approvals: 'الموافقات', groups: 'المجموعات', pendingParents: 'حسابات أولياء الأمور المعلقة', approve: 'موافقة', approved: 'تمت الموافقة على الحساب', approvalError: 'تعذر تحديث الحساب.', approvalEmailFailed: 'تمت الموافقة على الحساب، ولكن تعذر إرسال إشعار البريد الإلكتروني.', eventTitle: 'عنوان الفعالية', eventDate: 'تاريخ الفعالية', eventAudience: 'الجمهور', allSchool: 'الجميع', createEvent: 'إنشاء فعالية', eventCreated: 'تم إنشاء الفعالية.', group: 'المجموعة', studentId: 'معرف الطالب', studentName: 'اسم الطالب', assignmentTitle: 'عنوان الواجب', description: 'الوصف', dueDate: 'تاريخ التسليم', createAssignment: 'نشر الواجب', assignmentCreated: 'تم نشر الواجب', attendanceStatus: 'الحالة', present: 'حاضر', absent: 'غائب', late: 'متأخر', saveAttendance: 'حفظ الحضور', attendanceSaved: 'تم حفظ الحضور', loginButton: 'تسجيل الدخول', signupButton: 'إنشاء حساب', chooseAccountType: 'اختر نوع الحساب', accountType: 'نوع الحساب', signupNote: 'تحتاج جميع الحسابات الجديدة إلى موافقة الإدارة.', accountCreated: 'تم إنشاء الحساب. يرجى انتظار موافقة الإدارة.', groupId: 'معرف المجموعة', subject: 'المادة', level: 'المستوى', teacherUid: 'معرف المعلم', studentIds: 'الطلاب', schedule: 'الجدول الأسبوعي', createGroup: 'إنشاء مجموعة', groupCreated: 'تم إنشاء المجموعة وتعيينها.', attended: 'حاضر', markAttendance: 'تسجيل حضور السبت', attendanceDate: 'تاريخ الحصة', attendanceSummary: 'ملخص الحضور', attendanceRate: 'نسبة الحضور', viewHistory: 'عرض سجل الطالب', history: 'السجل', noAttendanceData: 'لا توجد بيانات حضور بعد.', saturdayOnly: 'يرجى اختيار يوم السبت.'
     ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل', students: 'الطلاب', teachers: 'المعلمون', unreadMessages: 'الرسائل غير المقروءة', unreadAssignments: 'الواجبات غير المقروءة', recipientType: 'إرسال إلى', everyone: 'الجميع', groupRecipient: 'مجموعة', teacherRecipient: 'معلم', parentRecipient: 'ولي أمر', individualRecipient: 'ولي أمر محدد', recipient: 'المستلم', selectRecipient: 'اختر المستلم', messageSent: 'تم إرسال الرسالة.', sendMessage: 'إرسال الرسالة', noRecords: 'لا توجد سجلات بعد.', existingGroups: 'المجموعات الحالية', noGroups: 'لم يتم إنشاء أي مجموعات بعد.', edit: 'تعديل', deleteAction: 'حذف', updateGroup: 'تحديث المجموعة', groupUpdated: 'تم تحديث المجموعة.', groupDeleted: 'تم حذف المجموعة.', cancelEdit: 'إلغاء التعديل', confirmDeleteGroup: 'حذف هذه المجموعة؟ لا يمكن التراجع عن هذا.', sentOn: 'أُرسل في', inbox: 'الوارد', sent: 'المرسلة', back: 'رجوع'
@@ -277,6 +277,7 @@ function App() {
   const [signupName, setSignupName] = useState('');
   const [signupStudentName, setSignupStudentName] = useState('');
   const [authError, setAuthError] = useState('');
+  const [passwordResetMessage, setPasswordResetMessage] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [consentGuardian, setConsentGuardian] = useState(false);
   const [consentData, setConsentData] = useState(false);
@@ -457,6 +458,12 @@ function App() {
           ...(signupRole === 'parent' ? { linkedChildIds: [], requestedChildName: signupStudentName.trim() } : {}),
           ...(signupRole === 'teacher' ? { assignedGroupIds: [] } : {}),
           createdAt: new Date().toISOString()
+        });
+        await queueEmailNotification({
+          type: 'new-registration',
+          user: credential.user,
+          db,
+          actorRole: signupRole === 'parent' || signupRole === 'teacher' ? signupRole : undefined
         });
       }
       setEmail('');
@@ -749,30 +756,28 @@ function App() {
       // recipient dropdown (see firestore.rules: users/{uid} stays
       // owner/admin-only, directory/{uid} is readable by any signed-in user).
       const approvedParent = pendingParents.find((parent) => parent.id === parentId);
+      const approvedAccount = pendingParents.find((parent) => parent.id === parentId);
       await setDoc(doc(db, 'directory', parentId), {
         name: approvedParent?.name || approvedParent?.email || parentId,
         role: accountRole
       });
 
-      // Approval remains successful even if the external email service is
-      // temporarily unavailable. The parent can still log in; the admin sees
-      // a separate message if the notification could not be delivered.
-      let emailWarning = false;
-      if (accountRole === 'parent' && approvedParent?.email) {
+      if (approvedAccount?.email) {
         try {
-          const result = await sendParentApprovedEmail(user, {
-            recipientEmail: approvedParent.email,
-            recipientName: approvedParent.name || approvedParent.email,
-            locale: approvedParent.language || 'en'
+          await queueEmailNotification({
+            type: accountRole === 'teacher' ? 'teacher-approved' : 'parent-approved',
+            user,
+            db,
+            targetUserId: parentId,
+            actorRole: accountRole === 'admin' ? undefined : accountRole
           });
-          emailWarning = !result.sent && !result.skipped;
         } catch {
-          emailWarning = true;
+          // Approval remains successful if notification queueing is temporarily unavailable.
         }
       }
 
       setPendingParents((parents) => parents.filter((parent) => parent.id !== parentId));
-      setApprovalMessage(emailWarning ? `${t.approved} ${t.approvalEmailFailed}` : t.approved);
+      setApprovalMessage(t.approved);
     } catch {
       setApprovalMessage(t.approvalError);
     }
@@ -832,6 +837,14 @@ function App() {
         createdBy: user.uid,
         createdAt: new Date().toISOString()
       });
+      const createdEvent = await addDoc(collection(db, 'calendarEvents'), {
+        title: eventTitle.trim(),
+        date: eventDate,
+        audience: 'all',
+        createdBy: user.uid,
+        createdAt: new Date().toISOString()
+      });
+      await queueEmailNotification({ type: 'calendar-announcement', user, db, eventId: createdEvent.id });
       setEventTitle('');
       setEventDate('');
       setEventMessage(t.eventCreated);
@@ -847,7 +860,7 @@ function App() {
     event.preventDefault();
     if (!user || role !== 'teacher' || !assignmentGroupId || !assignmentTitle.trim()) return;
     try {
-      await addDoc(collection(db, 'assignments'), {
+      const createdAssignment = await addDoc(collection(db, 'assignments'), {
         groupId: assignmentGroupId,
         teacherId: user.uid,
         title: assignmentTitle.trim(),
@@ -856,6 +869,20 @@ function App() {
         unread: true,
         createdAt: new Date().toISOString()
       });
+      const assignmentGroup = availableGroups.find((group) => group.id === assignmentGroupId);
+      for (const student of availableStudents.filter((item) => assignmentGroup?.studentIds.includes(item.id))) {
+        for (const parentId of student.parentIds || []) {
+          await queueEmailNotification({
+            type: 'assignment-parent',
+            user,
+            db,
+            targetUserId: parentId,
+            assignmentId: createdAssignment.id,
+            studentId: student.id,
+            groupId: assignmentGroupId
+          });
+        }
+      }
       setAssignmentTitle('');
       setAssignmentDescription('');
       setAssignmentDueDate('');
@@ -881,15 +908,19 @@ function App() {
         recipientIds = role === 'admin' ? [...new Set([...parentIds, ...availableUsers.filter((item) => item.role === 'teacher').map((item) => item.id)])] : parentIds;
       }
       if (recipientIds.length === 0) return;
-      await Promise.all([...new Set(recipientIds)].map((recipientId) => addDoc(collection(db, 'messages'), {
-        participants: [user.uid, recipientId],
-        senderId: user.uid,
-        senderName: profileName || user.email || 'User',
-        text: messageText.trim(),
-        unread: true,
-        unreadFor: [recipientId],
-        createdAt: new Date().toISOString()
-      })));
+      for (const recipientId of [...new Set(recipientIds)]) {
+        const messageSnapshot = await addDoc(collection(db, 'messages'), {
+          participants: [user.uid, recipientId],
+          senderId: user.uid,
+          senderName: profileName || user.email || 'User',
+          text: messageText.trim(),
+          unread: true,
+          unreadFor: [recipientId],
+          createdAt: new Date().toISOString()
+        });
+        await queueEmailNotification({ type: 'message', user, db, targetUserId: recipientId, messageId: messageSnapshot.id });
+      }
+
       setMessageText('');
       setMessageStatus(t.messageSent);
       setLiveItems((current) => ({ ...current, messages: undefined }));
@@ -977,6 +1008,51 @@ function App() {
           await updateDoc(doc(db, 'users', groupTeacherUid.trim()), { assignedGroupIds: arrayUnion(targetGroupId) });
         }
         await syncStudentGroupMemberships(targetGroupId, groupStudentIds, existing?.studentIds || []);
+        const previousStudentIds = existing?.studentIds || [];
+        const addedStudentIds = groupStudentIds.filter((studentId) => !previousStudentIds.includes(studentId));
+        const levelChanged = Boolean(existing && (existing.subject !== groupSubject || existing.level !== groupLevel));
+        const levelNotificationStudentIds = levelChanged ? groupStudentIds : addedStudentIds;
+        for (const studentId of levelNotificationStudentIds) {
+          const student = availableStudents.find((item) => item.id === studentId);
+          for (const parentId of student?.parentIds || []) {
+            await queueEmailNotification({
+              type: 'student-level-assigned',
+              user,
+              db,
+              targetUserId: parentId,
+              studentId,
+              subject: groupSubject,
+              level: groupLevel,
+              groupId: targetGroupId
+            });
+          }
+        }
+        for (const studentId of addedStudentIds) {
+          const student = availableStudents.find((item) => item.id === studentId);
+          for (const parentId of student?.parentIds || []) {
+            await queueEmailNotification({
+              type: 'student-group-assigned',
+              user,
+              db,
+              targetUserId: parentId,
+              studentId,
+              groupId: targetGroupId
+            });
+          }
+        }
+        if (existing && existing.teacherId !== groupTeacherUid.trim()) {
+          await queueEmailNotification({ type: 'teacher-group-removed', user, db, targetUserId: existing.teacherId, groupId: targetGroupId });
+          await queueEmailNotification({ type: 'teacher-group-assigned', user, db, targetUserId: groupTeacherUid.trim(), groupId: targetGroupId });
+          for (const studentId of groupStudentIds) {
+            const student = availableStudents.find((item) => item.id === studentId);
+            for (const parentId of student?.parentIds || []) {
+              await queueEmailNotification({ type: 'student-group-assigned', user, db, targetUserId: parentId, studentId, groupId: targetGroupId });
+            }
+          }
+        } else if (!existing) {
+          await queueEmailNotification({ type: 'teacher-group-assigned', user, db, targetUserId: groupTeacherUid.trim(), groupId: targetGroupId });
+        }
+
         setGroupMessage(t.groupUpdated);
       } else {
         await setDoc(doc(db, 'groups', targetGroupId), {
@@ -988,6 +1064,15 @@ function App() {
         });
         await updateDoc(doc(db, 'users', groupTeacherUid.trim()), { assignedGroupIds: arrayUnion(targetGroupId) });
         await syncStudentGroupMemberships(targetGroupId, groupStudentIds, []);
+        for (const studentId of groupStudentIds) {
+          const student = availableStudents.find((item) => item.id === studentId);
+          for (const parentId of student?.parentIds || []) {
+            await queueEmailNotification({ type: 'student-level-assigned', user, db, targetUserId: parentId, studentId, subject: groupSubject, level: groupLevel, groupId: targetGroupId });
+            await queueEmailNotification({ type: 'student-group-assigned', user, db, targetUserId: parentId, studentId, groupId: targetGroupId });
+          }
+        }
+        await queueEmailNotification({ type: 'teacher-group-assigned', user, db, targetUserId: groupTeacherUid.trim(), groupId: targetGroupId });
+
         setAssignedGroupIds((current) => current.includes(targetGroupId) ? current : [...current, targetGroupId]);
         setGroupMessage(t.groupCreated);
       }
@@ -1003,6 +1088,8 @@ function App() {
     try {
       await deleteDoc(doc(db, 'groups', group.id));
       if (group.teacherId) await updateDoc(doc(db, 'users', group.teacherId), { assignedGroupIds: arrayRemove(group.id) });
+      if (group.teacherId) await queueEmailNotification({ type: 'teacher-group-removed', user, db, targetUserId: group.teacherId, groupId: group.id });
+
       await syncStudentGroupMemberships(group.id, [], group.studentIds);
       if (editingGroupId === group.id) resetGroupForm();
       setGroupMessage(t.groupDeleted);
@@ -1437,6 +1524,22 @@ function App() {
                   )}
                   <label>{t.email}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>
                   <label>{t.password}<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} autoComplete={authMode === 'login' ? 'current-password' : 'new-password'} /></label>
+                  {authMode === 'login' && <button className="text-action" type="button" onClick={async () => {
+                    setPasswordResetMessage('');
+                    if (!email.trim()) {
+                      setAuthError(t.email);
+                      return;
+                    }
+                    try {
+                      auth.languageCode = locale;
+                      await sendPasswordResetEmail(auth, email.trim());
+                      setPasswordResetMessage(t.passwordResetSent);
+                    } catch {
+                      setAuthError(t.authError);
+                    }
+                  }}>{t.forgotPassword}</button>}
+                  {passwordResetMessage && <p className="approval-message">{passwordResetMessage}</p>}
+
                   {authError && <p className="auth-error" role="alert">{authError}</p>}
                   <button className="primary-action" type="submit" disabled={isAuthenticating}>{isAuthenticating ? '...' : authMode === 'login' ? t.signIn : t.createAccount}</button>
                 </form>

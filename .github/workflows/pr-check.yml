@@ -31,3 +31,7 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_EMAIL_NOTIFICATION_WORKER_URL: ${{ vars.VITE_EMAIL_NOTIFICATION_WORKER_URL }}
+
+      - name: Validate email notification Worker
+        working-directory: cloudflare/email-notifications
+        run: npx wrangler deploy --dry-run

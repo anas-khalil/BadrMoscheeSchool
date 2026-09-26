@@ -4,4 +4,6 @@ compatibility_date = "2026-09-26"
 
 [vars]
 ALLOWED_ORIGIN = "https://badrschule.com"
-# Set FIREBASE_PROJECT_ID and ADMIN_UIDS as secrets before deployment.
+
+[triggers]
+crons = ["* * * * *"]

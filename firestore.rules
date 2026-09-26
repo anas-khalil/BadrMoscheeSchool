@@ -170,5 +170,27 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create, update, delete: if isAdmin();
     }
+    match /emailNotifications/{notificationId} {
+      allow create: if isSignedIn()
+        && request.resource.data.actorUserId == request.auth.uid
+        && request.resource.data.type in [
+          'parent-approved',
+          'teacher-approved',
+          'student-level-assigned',
+          'student-group-assigned',
+          'teacher-group-assigned',
+          'teacher-group-removed',
+          'assignment-parent',
+          'calendar-announcement',
+          'message',
+          'new-registration'
+        ]
+        && (
+          request.resource.data.type == 'new-registration' ||
+          (hasUserDoc() && userDoc().status == 'active')
+        );
+      allow read, update, delete: if false;
+    }
+
   }
 }
