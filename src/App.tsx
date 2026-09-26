@@ -1010,8 +1010,9 @@ function App() {
         await syncStudentGroupMemberships(targetGroupId, groupStudentIds, existing?.studentIds || []);
         const previousStudentIds = existing?.studentIds || [];
         const addedStudentIds = groupStudentIds.filter((studentId) => !previousStudentIds.includes(studentId));
-        const removedStudentIds = previousStudentIds.filter((studentId) => !groupStudentIds.includes(studentId));
-        for (const studentId of addedStudentIds) {
+        const levelChanged = Boolean(existing && (existing.subject !== groupSubject || existing.level !== groupLevel));
+        const levelNotificationStudentIds = levelChanged ? groupStudentIds : addedStudentIds;
+        for (const studentId of levelNotificationStudentIds) {
           const student = availableStudents.find((item) => item.id === studentId);
           for (const parentId of student?.parentIds || []) {
             await queueEmailNotification({
@@ -1026,7 +1027,7 @@ function App() {
             });
           }
         }
-        for (const studentId of removedStudentIds) {
+        for (const studentId of addedStudentIds) {
           const student = availableStudents.find((item) => item.id === studentId);
           for (const parentId of student?.parentIds || []) {
             await queueEmailNotification({
@@ -1035,8 +1036,6 @@ function App() {
               db,
               targetUserId: parentId,
               studentId,
-              subject: groupSubject,
-              level: groupLevel,
               groupId: targetGroupId
             });
           }
@@ -1059,6 +1058,15 @@ function App() {
         });
         await updateDoc(doc(db, 'users', groupTeacherUid.trim()), { assignedGroupIds: arrayUnion(targetGroupId) });
         await syncStudentGroupMemberships(targetGroupId, groupStudentIds, []);
+        for (const studentId of groupStudentIds) {
+          const student = availableStudents.find((item) => item.id === studentId);
+          for (const parentId of student?.parentIds || []) {
+            await queueEmailNotification({ type: 'student-level-assigned', user, db, targetUserId: parentId, studentId, subject: groupSubject, level: groupLevel, groupId: targetGroupId });
+            await queueEmailNotification({ type: 'student-group-assigned', user, db, targetUserId: parentId, studentId, groupId: targetGroupId });
+          }
+        }
+        await queueEmailNotification({ type: 'teacher-group-assigned', user, db, targetUserId: groupTeacherUid.trim(), groupId: targetGroupId });
+
         setAssignedGroupIds((current) => current.includes(targetGroupId) ? current : [...current, targetGroupId]);
         setGroupMessage(t.groupCreated);
       }
@@ -1074,6 +1082,8 @@ function App() {
     try {
       await deleteDoc(doc(db, 'groups', group.id));
       if (group.teacherId) await updateDoc(doc(db, 'users', group.teacherId), { assignedGroupIds: arrayRemove(group.id) });
+      if (group.teacherId) await queueEmailNotification({ type: 'teacher-group-removed', user, db, targetUserId: group.teacherId, groupId: group.id });
+
       await syncStudentGroupMemberships(group.id, [], group.studentIds);
       if (editingGroupId === group.id) resetGroupForm();
       setGroupMessage(t.groupDeleted);
