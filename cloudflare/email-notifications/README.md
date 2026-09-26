@@ -23,7 +23,7 @@ npx wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON
 npx wrangler deploy
 ```
 
-The Worker has a Cron Trigger that runs every minute. Cloudflare Cron Triggers invoke the Worker scheduled handler on the configured schedule. The one-minute delay also provides batching for message notifications. citeturn1search0
+The Worker has a Cron Trigger that runs every minute. Cloudflare Cron Triggers invoke the Worker scheduled handler on the configured schedule. The one-minute delay also provides batching for message notifications.
 
 ## Notification queue
 
