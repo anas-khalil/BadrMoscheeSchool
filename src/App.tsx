@@ -902,15 +902,6 @@ function App() {
         recipientIds = role === 'admin' ? [...new Set([...parentIds, ...availableUsers.filter((item) => item.role === 'teacher').map((item) => item.id)])] : parentIds;
       }
       if (recipientIds.length === 0) return;
-      await Promise.all([...new Set(recipientIds)].map((recipientId) => addDoc(collection(db, 'messages'), {
-        participants: [user.uid, recipientId],
-        senderId: user.uid,
-        senderName: profileName || user.email || 'User',
-        text: messageText.trim(),
-        unread: true,
-        unreadFor: [recipientId],
-        createdAt: new Date().toISOString()
-      })));
       for (const recipientId of [...new Set(recipientIds)]) {
         const messageSnapshot = await addDoc(collection(db, 'messages'), {
           participants: [user.uid, recipientId],
