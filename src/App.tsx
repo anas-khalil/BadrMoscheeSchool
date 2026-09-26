@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
-import { createUserWithEmailAndPassword, deleteUser, getAuth, onAuthStateChanged, signInWithEmailAndPassword, type User } from 'firebase/auth';
+import { createUserWithEmailAndPassword, deleteUser, getAuth, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, type User } from 'firebase/auth';
 import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { registerSW } from 'virtual:pwa-register';
-import { sendParentApprovedEmail } from './emailNotifications';
+import { queueEmailNotification } from './emailNotifications';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -277,6 +277,7 @@ function App() {
   const [signupName, setSignupName] = useState('');
   const [signupStudentName, setSignupStudentName] = useState('');
   const [authError, setAuthError] = useState('');
+  const [passwordResetMessage, setPasswordResetMessage] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [consentGuardian, setConsentGuardian] = useState(false);
   const [consentData, setConsentData] = useState(false);
@@ -749,25 +750,23 @@ function App() {
       // recipient dropdown (see firestore.rules: users/{uid} stays
       // owner/admin-only, directory/{uid} is readable by any signed-in user).
       const approvedParent = pendingParents.find((parent) => parent.id === parentId);
+      const approvedAccount = pendingParents.find((parent) => parent.id === parentId);
       await setDoc(doc(db, 'directory', parentId), {
         name: approvedParent?.name || approvedParent?.email || parentId,
         role: accountRole
       });
 
-      // Approval remains successful even if the external email service is
-      // temporarily unavailable. The parent can still log in; the admin sees
-      // a separate message if the notification could not be delivered.
-      let emailWarning = false;
-      if (accountRole === 'parent' && approvedParent?.email) {
+      if (approvedAccount?.email) {
         try {
-          const result = await sendParentApprovedEmail(user, {
-            recipientEmail: approvedParent.email,
-            recipientName: approvedParent.name || approvedParent.email,
-            locale: approvedParent.language || 'en'
+          await queueEmailNotification({
+            type: accountRole === 'teacher' ? 'teacher-approved' : 'parent-approved',
+            user,
+            db,
+            targetUserId: parentId,
+            actorRole: accountRole
           });
-          emailWarning = !result.sent && !result.skipped;
         } catch {
-          emailWarning = true;
+          // Approval remains successful if notification queueing is temporarily unavailable.
         }
       }
 
@@ -832,6 +831,14 @@ function App() {
         createdBy: user.uid,
         createdAt: new Date().toISOString()
       });
+      const createdEvent = await addDoc(collection(db, 'calendarEvents'), {
+        title: eventTitle.trim(),
+        date: eventDate,
+        audience: 'all',
+        createdBy: user.uid,
+        createdAt: new Date().toISOString()
+      });
+      await queueEmailNotification({ type: 'calendar-announcement', user, db, eventId: createdEvent.id });
       setEventTitle('');
       setEventDate('');
       setEventMessage(t.eventCreated);
@@ -856,6 +863,29 @@ function App() {
         unread: true,
         createdAt: new Date().toISOString()
       });
+      const createdAssignment = await addDoc(collection(db, 'assignments'), {
+        groupId: assignmentGroupId,
+        teacherId: user.uid,
+        title: assignmentTitle.trim(),
+        description: assignmentDescription.trim(),
+        dueDate: assignmentDueDate,
+        unread: true,
+        createdAt: new Date().toISOString()
+      });
+      const assignmentGroup = availableGroups.find((group) => group.id === assignmentGroupId);
+      for (const student of availableStudents.filter((item) => assignmentGroup?.studentIds.includes(item.id))) {
+        for (const parentId of student.parentIds || []) {
+          await queueEmailNotification({
+            type: 'assignment-parent',
+            user,
+            db,
+            targetUserId: parentId,
+            assignmentId: createdAssignment.id,
+            studentId: student.id,
+            groupId: assignmentGroupId
+          });
+        }
+      }
       setAssignmentTitle('');
       setAssignmentDescription('');
       setAssignmentDueDate('');
@@ -890,6 +920,19 @@ function App() {
         unreadFor: [recipientId],
         createdAt: new Date().toISOString()
       })));
+      for (const recipientId of [...new Set(recipientIds)]) {
+        const messageSnapshot = await addDoc(collection(db, 'messages'), {
+          participants: [user.uid, recipientId],
+          senderId: user.uid,
+          senderName: profileName || user.email || 'User',
+          text: messageText.trim(),
+          unread: true,
+          unreadFor: [recipientId],
+          createdAt: new Date().toISOString()
+        });
+        await queueEmailNotification({ type: 'message', user, db, targetUserId: recipientId, messageId: messageSnapshot.id });
+      }
+
       setMessageText('');
       setMessageStatus(t.messageSent);
       setLiveItems((current) => ({ ...current, messages: undefined }));
@@ -977,6 +1020,46 @@ function App() {
           await updateDoc(doc(db, 'users', groupTeacherUid.trim()), { assignedGroupIds: arrayUnion(targetGroupId) });
         }
         await syncStudentGroupMemberships(targetGroupId, groupStudentIds, existing?.studentIds || []);
+        const previousStudentIds = existing?.studentIds || [];
+        const addedStudentIds = groupStudentIds.filter((studentId) => !previousStudentIds.includes(studentId));
+        const removedStudentIds = previousStudentIds.filter((studentId) => !groupStudentIds.includes(studentId));
+        for (const studentId of addedStudentIds) {
+          const student = availableStudents.find((item) => item.id === studentId);
+          for (const parentId of student?.parentIds || []) {
+            await queueEmailNotification({
+              type: 'student-level-assigned',
+              user,
+              db,
+              targetUserId: parentId,
+              studentId,
+              subject: groupSubject,
+              level: groupLevel,
+              groupId: targetGroupId
+            });
+          }
+        }
+        for (const studentId of removedStudentIds) {
+          const student = availableStudents.find((item) => item.id === studentId);
+          for (const parentId of student?.parentIds || []) {
+            await queueEmailNotification({
+              type: 'student-group-assigned',
+              user,
+              db,
+              targetUserId: parentId,
+              studentId,
+              subject: groupSubject,
+              level: groupLevel,
+              groupId: targetGroupId
+            });
+          }
+        }
+        if (existing && existing.teacherId !== groupTeacherUid.trim()) {
+          await queueEmailNotification({ type: 'teacher-group-removed', user, db, targetUserId: existing.teacherId, groupId: targetGroupId });
+          await queueEmailNotification({ type: 'teacher-group-assigned', user, db, targetUserId: groupTeacherUid.trim(), groupId: targetGroupId });
+        } else if (!existing) {
+          await queueEmailNotification({ type: 'teacher-group-assigned', user, db, targetUserId: groupTeacherUid.trim(), groupId: targetGroupId });
+        }
+
         setGroupMessage(t.groupUpdated);
       } else {
         await setDoc(doc(db, 'groups', targetGroupId), {
@@ -1437,6 +1520,22 @@ function App() {
                   )}
                   <label>{t.email}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" /></label>
                   <label>{t.password}<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} autoComplete={authMode === 'login' ? 'current-password' : 'new-password'} /></label>
+                  {authMode === 'login' && <button className="text-action" type="button" onClick={async () => {
+                    setPasswordResetMessage('');
+                    if (!email.trim()) {
+                      setAuthError(t.email);
+                      return;
+                    }
+                    try {
+                      auth.languageCode = locale;
+                      await sendPasswordResetEmail(auth, email.trim());
+                      setPasswordResetMessage(t.passwordResetSent);
+                    } catch {
+                      setAuthError(t.authError);
+                    }
+                  }}>{t.forgotPassword}</button>}
+                  {passwordResetMessage && <p className="approval-message">{passwordResetMessage}</p>}
+
                   {authError && <p className="auth-error" role="alert">{authError}</p>}
                   <button className="primary-action" type="submit" disabled={isAuthenticating}>{isAuthenticating ? '...' : authMode === 'login' ? t.signIn : t.createAccount}</button>
                 </form>
