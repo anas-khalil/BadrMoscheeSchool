@@ -769,7 +769,7 @@ function App() {
             user,
             db,
             targetUserId: parentId,
-            actorRole: accountRole
+            actorRole: accountRole === 'admin' ? undefined : accountRole
           });
         } catch {
           // Approval remains successful if notification queueing is temporarily unavailable.
@@ -777,7 +777,7 @@ function App() {
       }
 
       setPendingParents((parents) => parents.filter((parent) => parent.id !== parentId));
-      setApprovalMessage(emailWarning ? `${t.approved} ${t.approvalEmailFailed}` : t.approved);
+      setApprovalMessage(t.approved);
     } catch {
       setApprovalMessage(t.approvalError);
     }
