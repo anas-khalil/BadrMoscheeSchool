@@ -1043,6 +1043,12 @@ function App() {
         if (existing && existing.teacherId !== groupTeacherUid.trim()) {
           await queueEmailNotification({ type: 'teacher-group-removed', user, db, targetUserId: existing.teacherId, groupId: targetGroupId });
           await queueEmailNotification({ type: 'teacher-group-assigned', user, db, targetUserId: groupTeacherUid.trim(), groupId: targetGroupId });
+          for (const studentId of groupStudentIds) {
+            const student = availableStudents.find((item) => item.id === studentId);
+            for (const parentId of student?.parentIds || []) {
+              await queueEmailNotification({ type: 'student-group-assigned', user, db, targetUserId: parentId, studentId, groupId: targetGroupId });
+            }
+          }
         } else if (!existing) {
           await queueEmailNotification({ type: 'teacher-group-assigned', user, db, targetUserId: groupTeacherUid.trim(), groupId: targetGroupId });
         }
