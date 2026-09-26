@@ -854,15 +854,6 @@ function App() {
     event.preventDefault();
     if (!user || role !== 'teacher' || !assignmentGroupId || !assignmentTitle.trim()) return;
     try {
-      await addDoc(collection(db, 'assignments'), {
-        groupId: assignmentGroupId,
-        teacherId: user.uid,
-        title: assignmentTitle.trim(),
-        description: assignmentDescription.trim(),
-        dueDate: assignmentDueDate,
-        unread: true,
-        createdAt: new Date().toISOString()
-      });
       const createdAssignment = await addDoc(collection(db, 'assignments'), {
         groupId: assignmentGroupId,
         teacherId: user.uid,
