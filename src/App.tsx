@@ -459,6 +459,12 @@ function App() {
           ...(signupRole === 'teacher' ? { assignedGroupIds: [] } : {}),
           createdAt: new Date().toISOString()
         });
+        await queueEmailNotification({
+          type: 'new-registration',
+          user: credential.user,
+          db,
+          actorRole: signupRole
+        });
       }
       setEmail('');
       setPassword('');
