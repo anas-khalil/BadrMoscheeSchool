@@ -463,7 +463,7 @@ function App() {
           type: 'new-registration',
           user: credential.user,
           db,
-          actorRole: signupRole
+          actorRole: signupRole === 'parent' || signupRole === 'teacher' ? signupRole : undefined
         });
       }
       setEmail('');
