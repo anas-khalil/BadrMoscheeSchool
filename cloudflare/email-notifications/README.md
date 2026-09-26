@@ -1,40 +1,49 @@
 # Badr School email notifications
 
-This Cloudflare Worker sends transactional notifications through Resend using `admin@badrschule.com` as the sender and reply-to address.
+This Cloudflare Worker sends transactional notifications through Resend using `admin@badrschule.com`.
 
 ## Required secrets
 
 Set these Worker secrets before deployment:
 
-```bash
-wrangler secret put RESEND_API_KEY
-wrangler secret put FIREBASE_PROJECT_ID
-wrangler secret put ADMIN_UIDS
+```
+npx wrangler secret put RESEND_API_KEY
+npx wrangler secret put FIREBASE_PROJECT_ID
+npx wrangler secret put ADMIN_UIDS
+npx wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON
 ```
 
-`ADMIN_UIDS` is a comma-separated list of Firebase Auth UIDs that are allowed to request notification emails.
+`ADMIN_UIDS` is a comma-separated list of Firebase Auth UIDs that are allowed to request legacy direct notification emails.
 
-## Deploy
+`FIREBASE_SERVICE_ACCOUNT_JSON` is the complete Firebase Admin SDK service-account JSON. It is used only by the Worker to read the Firestore notification queue and recipient data. Never commit this JSON to GitHub or expose it to the React application.
 
-From this directory:
+## Deployment
 
-```bash
+```
 npx wrangler deploy
 ```
 
-The Resend domain `badrschule.com` must remain verified, and the Resend API key must never be committed to GitHub or exposed in the React application.
+The Worker has a Cron Trigger that runs every minute. Cloudflare Cron Triggers invoke the Worker scheduled handler on the configured schedule. The one-minute delay also provides batching for message notifications. citeturn1search0
 
-## Current notification
+## Notification queue
 
-`POST /` with a Firebase ID token in `Authorization: Bearer <token>` and:
+The React application writes authorized records to the Firestore `emailNotifications` collection. The Worker resolves the recipient from Firebase and sends the email through Resend.
 
-```json
-{
-  "type": "parent-approved",
-  "recipientEmail": "parent@example.com",
-  "recipientName": "Parent Name",
-  "locale": "en"
-}
-```
+Current queued notification types:
 
-The Worker sends from `Badr Mosque School <admin@badrschule.com>` with `Reply-To: admin@badrschule.com`.
+- parent-approved
+- teacher-approved
+- student-level-assigned
+- student-group-assigned
+- teacher-group-assigned
+- teacher-group-removed
+- assignment-parent
+- calendar-announcement
+- message
+- new-registration
+
+Messages are intentionally delayed by two minutes. Multiple messages for the same recipient during that window are combined into one email.
+
+Password reset is handled directly by Firebase Authentication rather than this Worker.
+
+The Resend domain `badrschule.com` must remain verified.
