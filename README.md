@@ -6,7 +6,7 @@ A responsive, multi-language school management web app for Badr Moschee Arabic S
 
 The core application is implemented and validated locally. It includes role-aware Firebase authentication, pending account approval, parent/student linking, groups, teacher assignments, Saturday attendance, admin attendance reporting, calendar events, in-app messaging, Arabic RTL, and PWA support.
 
-The frontend is a static Vite application. Firebase Authentication and Firestore provide the backend; no Cloud Functions, Storage, email, SMS, or push notification services are used.
+The frontend is a static Vite application. Firebase Authentication and Firestore provide the main backend, while a small Cloudflare Worker can securely send transactional email through Resend without exposing the Resend API key to the browser.
 
 ## Features
 
@@ -43,6 +43,7 @@ The frontend is a static Vite application. Firebase Authentication and Firestore
    VITE_FIREBASE_STORAGE_BUCKET=...
    VITE_FIREBASE_MESSAGING_SENDER_ID=...
    VITE_FIREBASE_APP_ID=...
+   VITE_EMAIL_NOTIFICATION_WORKER_URL=https://<your-worker-domain>/
    ```
 
 4. Run validation:
@@ -136,13 +137,17 @@ The Vite base path is relative (`./`), so the app works when served from a repos
 
 A minimal `firebase.json` can be used to deploy the `dist/` output and serve the app as a SPA.
 
+## Email notifications
+
+Parent approval emails are sent through the Cloudflare Worker in `cloudflare/email-notifications/`, which verifies the Firebase ID token and restricts sending to the configured admin UIDs. The Worker sends through Resend using `admin@badrschule.com` as the From and Reply-To address. Keep `RESEND_API_KEY`, `FIREBASE_PROJECT_ID`, and `ADMIN_UIDS` in Cloudflare Worker secrets; never commit them to Git.
+
 ## Spark plan compatibility
 
 This design remains within Firebase Spark (free) constraints:
 
 - No Cloud Functions
 - No Storage bucket usage
-- No third-party email/SMS providers
+- No Firebase Cloud Functions; transactional email is handled outside Firebase by the Cloudflare Worker + Resend integration
 - All notifications stay as Firestore documents and are queried in-app
 - Reads/writes are intentionally limited and paginated for small-school scale
 
