@@ -1600,12 +1600,12 @@ function App() {
                   {authMode === 'signup' && (
                     <>
                       <label>{t.accountType}<select value={signupRole} onChange={(event) => setSignupRole(event.target.value as Role)}><option value="parent">{t.parent}</option><option value="teacher">{t.teacher}</option></select></label>
+                      <label>{t.name}<input value={signupName} onChange={(event) => setSignupName(event.target.value)} required /></label>
                       {signupRole === 'parent' && <>
                         <div className="detail-card">
                           <strong>{t.placementFormNotice}</strong>
                           <p><a href="https://docs.google.com/forms/d/e/1FAIpQLSccnBGKbeJkTfTBlv-KkNJtl2V16glxaTzmCW03c8dvQF5-bg/viewform?usp=header" target="_blank" rel="noreferrer">{t.placementFormLink}</a></p>
                         </div>
-                        <label>{t.name}<input value={signupName} onChange={(event) => setSignupName(event.target.value)} required /></label>
                         <label>{t.studentName}<input value={signupStudentName} onChange={(event) => setSignupStudentName(event.target.value)} required /></label>
                         <p className="muted">{t.additionalChildrenNote}</p>
                       </>}
