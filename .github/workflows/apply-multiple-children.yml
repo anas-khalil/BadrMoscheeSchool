@@ -1,0 +1,257 @@
+name: Apply multiple children implementation
+
+on:
+  push:
+    branches: [feature/multiple-children-parent]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch application
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/App.tsx')
+          s = p.read_text()
+
+          s = s.replace("    ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child', name: 'Full name',", "    ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child', name: 'Full name', additionalChildrenNote: 'Additional children can be added from your parent dashboard after your account is activated.', childAdded: 'Child added.', childUpdated: 'Child updated.', editChild: 'Edit child', addChild: 'Add child', saveChild: 'Save child', cancel: 'Cancel', selectChild: 'Select child',")
+          s = s.replace("    ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name',", "    ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name', additionalChildrenNote: 'Nach der Aktivierung können Sie weitere Kinder über Ihr Eltern-Dashboard hinzufügen.', childAdded: 'Kind hinzugefügt.', childUpdated: 'Kind aktualisiert.', editChild: 'Kind bearbeiten', addChild: 'Kind hinzufügen', saveChild: 'Kind speichern', cancel: 'Abbrechen', selectChild: 'Kind auswählen',")
+          s = s.replace("    ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل',", "    ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل', additionalChildrenNote: 'يمكنك إضافة أطفال آخرين من لوحة تحكم ولي الأمر بعد تفعيل حسابك.', childAdded: 'تمت إضافة الطفل.', childUpdated: 'تم تحديث بيانات الطفل.', editChild: 'تعديل بيانات الطفل', addChild: 'إضافة طفل', saveChild: 'حفظ بيانات الطفل', cancel: 'إلغاء', selectChild: 'اختر الطفل',")
+
+          s = s.replace("  const [linkedChildIds, setLinkedChildIds] = useState<string[]>([]);", "  const [linkedChildIds, setLinkedChildIds] = useState<string[]>([]);\n  const [selectedChildId, setSelectedChildId] = useState('');\n  const [newChildName, setNewChildName] = useState('');\n  const [editingChildId, setEditingChildId] = useState<string | null>(null);\n  const [editingChildName, setEditingChildName] = useState('');\n  const [childMessage, setChildMessage] = useState('');")
+
+          anchor = "  useEffect(() => {\n    document.documentElement.lang = locale;"
+          insert = "  useEffect(() => {\n    if (role === 'parent' && linkedChildIds.length > 0 && !linkedChildIds.includes(selectedChildId)) {\n      setSelectedChildId(linkedChildIds[0]);\n    }\n    if (role === 'parent' && linkedChildIds.length === 0) setSelectedChildId('');\n  }, [linkedChildIds, role, selectedChildId]);\n\n"
+          s = s.replace(anchor, insert + anchor)
+
+          old = """          let identifiers = role === 'parent' ? linkedChildIds : assignedGroupIds;
+          let field = role === 'parent' ? 'studentId' : 'groupId';
+          if (role === 'parent' && activeSection === 'assignments') {
+            const childSnapshots = await getExistingDocs('students', linkedChildIds);
+            identifiers = [...new Set(childSnapshots.flatMap((snapshot) => (snapshot.data()?.groupMemberships || []).map((membership: { groupId: string }) => membership.groupId)))];
+            field = 'groupId';
+          }"""
+          new = """          let identifiers = role === 'parent' ? linkedChildIds : assignedGroupIds;
+          let field = role === 'parent' ? 'studentId' : 'groupId';
+          if (role === 'parent' && activeSection === 'assignments') {
+            const childIds = selectedChildId ? [selectedChildId] : linkedChildIds;
+            const childSnapshots = await getExistingDocs('students', childIds);
+            identifiers = [...new Set(childSnapshots.flatMap((snapshot) => (snapshot.data()?.groupMemberships || []).map((membership: { groupId: string }) => membership.groupId)))];
+            field = 'groupId';
+          }
+          if (role === 'parent' && activeSection === 'attendance') {
+            identifiers = selectedChildId ? [selectedChildId] : linkedChildIds;
+            field = 'studentId';
+          }"""
+          if old not in s: raise SystemExit('section load anchor not found')
+          s = s.replace(old, new)
+
+          old = "  }, [activeSection, assignedGroupIds, availableGroups, availableUsers, linkedChildIds, locale, profileName, profileStatus, role, user]);"
+          new = "  }, [activeSection, assignedGroupIds, availableGroups, availableUsers, linkedChildIds, locale, profileName, profileStatus, role, selectedChildId, user]);"
+          s = s.replace(old, new)
+
+          old = """    if (role === 'parent') {
+      void Promise.all(linkedChildIds.map((studentId) => getDocs(query(collection(db, 'attendance'), where('studentId', '==', studentId)))))
+        .then((snapshots) => {
+          if (cancelled) return;
+          const studentNameById = new Map(availableStudents.map((student) => [student.id, student.name]));
+          setParentAttendance(linkedChildIds.map((studentId, index) => ({
+            studentId,
+            studentName: studentNameById.get(studentId) || studentId,
+            days: snapshots[index].docs
+              .map((item) => item.data())
+              .map((record) => ({ date: record.date || '', status: record.status || 'absent' }))
+              .sort((a, b) => b.date.localeCompare(a.date))
+          })));
+        }).catch(() => { if (!cancelled) setParentAttendance([]); });
+    }"""
+          new = """    if (role === 'parent') {
+      const childIds = selectedChildId ? [selectedChildId] : linkedChildIds;
+      void Promise.all(childIds.map((studentId) => getDocs(query(collection(db, 'attendance'), where('studentId', '==', studentId)))))
+        .then((snapshots) => {
+          if (cancelled) return;
+          const studentNameById = new Map(availableStudents.map((student) => [student.id, student.name]));
+          setParentAttendance(childIds.map((studentId, index) => ({
+            studentId,
+            studentName: studentNameById.get(studentId) || studentId,
+            days: snapshots[index].docs
+              .map((item) => item.data())
+              .map((record) => ({ date: record.date || '', status: record.status || 'absent' }))
+              .sort((a, b) => b.date.localeCompare(a.date))
+          })));
+        }).catch(() => { if (!cancelled) setParentAttendance([]); });
+    }"""
+          if old not in s: raise SystemExit('attendance parent anchor not found')
+          s = s.replace(old, new)
+          s = s.replace("  }, [activeSection, assignedGroupIds, attendanceGroupId, availableStudents, linkedChildIds, profileStatus, role, user]);", "  }, [activeSection, assignedGroupIds, attendanceGroupId, availableStudents, linkedChildIds, profileStatus, role, selectedChildId, user]);")
+
+          anchor = "  const approveParent = async (parentId: string, accountRole: Role, childId: string) => {"
+          functions = r'''  const addParentChild = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!user || role !== 'parent' || profileStatus !== 'active' || !newChildName.trim()) return;
+    try {
+      const studentReference = await addDoc(collection(db, 'students'), {
+        name: newChildName.trim(),
+        parentIds: [user.uid],
+        groupMemberships: [],
+        groupIds: [],
+        createdByParentId: user.uid,
+        createdAt: new Date().toISOString()
+      });
+      await updateDoc(doc(db, 'users', user.uid), { linkedChildIds: arrayUnion(studentReference.id) });
+      setLinkedChildIds((current) => [...current, studentReference.id]);
+      setAvailableStudents((current) => [...current, { id: studentReference.id, name: newChildName.trim(), parentIds: [user.uid] }]);
+      setSelectedChildId(studentReference.id);
+      setNewChildName('');
+      setChildMessage(t.childAdded);
+    } catch {
+      setChildMessage(t.approvalError);
+    }
+  };
+
+  const saveParentChild = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!user || role !== 'parent' || profileStatus !== 'active' || !editingChildId || !editingChildName.trim()) return;
+    if (!linkedChildIds.includes(editingChildId)) return;
+    try {
+      await updateDoc(doc(db, 'students', editingChildId), {
+        name: editingChildName.trim(),
+        updatedAt: new Date().toISOString()
+      });
+      setAvailableStudents((current) => current.map((student) => student.id === editingChildId ? { ...student, name: editingChildName.trim() } : student));
+      setEditingChildId(null);
+      setEditingChildName('');
+      setChildMessage(t.childUpdated);
+    } catch {
+      setChildMessage(t.approvalError);
+    }
+  };
+
+'''
+          s = s.replace(anchor, functions + anchor)
+
+          s = s.replace("{signupRole === 'parent' && <label>{t.studentName}<input value={signupStudentName} onChange={(event) => setSignupStudentName(event.target.value)} required /></label>}", "{signupRole === 'parent' && <><label>{t.studentName}<input value={signupStudentName} onChange={(event) => setSignupStudentName(event.target.value)} required /></label><p className=\"muted\">{t.additionalChildrenNote}</p></>}")
+
+          anchor = "          {activeSection === 'assignments' && role === 'teacher' && ("
+          parentAssignmentSelector = """          {activeSection === 'assignments' && role === 'parent' && (
+            <article className=\"detail-card event-form-card\">
+              <label>{t.selectChild}<select value={selectedChildId} onChange={(event) => setSelectedChildId(event.target.value)} required><option value=\"\">{t.selectChild}</option>{availableStudents.filter((student) => linkedChildIds.includes(student.id)).map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}</select></label>
+            </article>
+          )}
+
+"""
+          s = s.replace(anchor, parentAssignmentSelector + anchor)
+
+          anchor = "          {activeSection === 'attendance' && role === 'teacher' && ("
+          parentAttendanceSelector = """          {activeSection === 'attendance' && role === 'parent' && (
+            <article className=\"detail-card event-form-card\">
+              <label>{t.selectChild}<select value={selectedChildId} onChange={(event) => setSelectedChildId(event.target.value)} required><option value=\"\">{t.selectChild}</option>{availableStudents.filter((student) => linkedChildIds.includes(student.id)).map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}</select></label>
+            </article>
+          )}
+
+"""
+          s = s.replace(anchor, parentAttendanceSelector + anchor)
+
+          anchor = "          {activeSection === 'groups' && role === 'admin' && ("
+          childManager = r'''          {activeSection === 'dashboard' && role === 'parent' && (
+            <article className="detail-card event-form-card">
+              <span className="eyebrow">{t.parent}</span>
+              <h3>{t.students}</h3>
+              <ul className="approval-list">
+                {availableStudents.filter((student) => linkedChildIds.includes(student.id)).map((student) => (
+                  <li key={student.id}>
+                    <span><strong>{student.name}</strong></span>
+                    <button className="secondary-action small-action" type="button" onClick={() => { setEditingChildId(student.id); setEditingChildName(student.name); setChildMessage(''); }}>{t.editChild}</button>
+                  </li>
+                ))}
+              </ul>
+              {editingChildId && (
+                <form className="event-form" onSubmit={saveParentChild}>
+                  <label>{t.studentName}<input value={editingChildName} onChange={(event) => setEditingChildName(event.target.value)} required /></label>
+                  <button className="primary-action" type="submit">{t.saveChild}</button>
+                  <button className="secondary-action" type="button" onClick={() => { setEditingChildId(null); setEditingChildName(''); }}>{t.cancel}</button>
+                </form>
+              )}
+              <form className="event-form" onSubmit={addParentChild}>
+                <label>{t.studentName}<input value={newChildName} onChange={(event) => setNewChildName(event.target.value)} required /></label>
+                <button className="primary-action" type="submit">{t.addChild}</button>
+              </form>
+              {childMessage && <p className="approval-message">{childMessage}</p>}
+            </article>
+          )}
+
+'''
+          s = s.replace(anchor, childManager + anchor)
+
+          p.write_text(s)
+
+          p = Path('firestore.rules')
+          r = p.read_text()
+          r = r.replace("return isParent() && studentId in userDoc().linkedChildIds;", "return isParent() && exists(/databases/$(database)/documents/students/$(studentId)) && request.auth.uid in get(/databases/$(database)/documents/students/$(studentId)).data.parentIds;")
+          r = r.replace("return isParent() && exists(/databases/$(database)/documents/groups/$(groupId))\n        && get(/databases/$(database)/documents/groups/$(groupId)).data.studentIds.hasAny(userDoc().linkedChildIds);", "return isParent() && exists(/databases/$(database)/documents/groups/$(groupId))\n        && get(/databases/$(database)/documents/groups/$(groupId)).data.studentIds.hasAny(userDoc().linkedChildIds);")
+          old = """      allow update: if isAdmin()
+        || (isSignedIn() && userId == request.auth.uid
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                  .hasAny(['role', 'status', 'linkedChildIds', 'assignedGroupIds', 'consentGiven', 'consentDate']));"""
+          new = """      allow update: if isAdmin()
+        || (isSignedIn() && userId == request.auth.uid
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                  .hasAny(['role', 'status', 'linkedChildIds', 'assignedGroupIds', 'consentGiven', 'consentDate']))
+        || (isParent() && userId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['linkedChildIds'])
+            && request.resource.data.linkedChildIds is list
+            && resource.data.linkedChildIds is list
+            && request.resource.data.linkedChildIds.size() == resource.data.linkedChildIds.size() + 1
+            && request.resource.data.linkedChildIds.hasAll(resource.data.linkedChildIds)
+            && exists(/databases/$(database)/documents/students/$(request.resource.data.linkedChildIds[request.resource.data.linkedChildIds.size() - 1]))
+            && request.auth.uid in get(/databases/$(database)/documents/students/$(request.resource.data.linkedChildIds[request.resource.data.linkedChildIds.size() - 1])).data.parentIds);"""
+          if old not in r: raise SystemExit('users update rule anchor not found')
+          r = r.replace(old, new)
+          old = """    match /students/{studentId} {
+      allow read: if isSignedIn() && (
+        isAdmin() ||
+        teacherHasAnyGroup(resource.data.groupIds) ||
+        parentHasChild(studentId)
+      );
+      allow create, update, delete: if isAdmin();
+    }"""
+          new = """    match /students/{studentId} {
+      allow read: if isSignedIn() && (
+        isAdmin() ||
+        teacherHasAnyGroup(resource.data.groupIds) ||
+        parentHasChild(studentId)
+      );
+      allow create: if isAdmin()
+        || (isParent()
+            && request.resource.data.keys().hasOnly(['name', 'parentIds', 'groupMemberships', 'groupIds', 'createdByParentId', 'createdAt'])
+            && request.resource.data.name is string
+            && request.resource.data.parentIds is list
+            && request.resource.data.parentIds.size() == 1
+            && request.resource.data.parentIds[0] == request.auth.uid
+            && request.resource.data.groupMemberships == []
+            && request.resource.data.groupIds == []
+            && request.resource.data.createdByParentId == request.auth.uid);
+      allow update: if isAdmin()
+        || (isParent()
+            && parentHasChild(studentId)
+            && request.resource.data.parentIds == resource.data.parentIds
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'updatedAt']));
+      allow delete: if isAdmin();
+    }"""
+          if old not in r: raise SystemExit('students rule anchor not found')
+          r = r.replace(old, new)
+          p.write_text(r)
+          PY
+      - name: Commit generated changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx firestore.rules .github/workflows/apply-multiple-children.yml
+          git commit -m "Support multiple children per parent account"
+          git push
