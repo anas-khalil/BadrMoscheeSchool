@@ -55,8 +55,23 @@ service cloud.firestore {
 
       allow update: if isAdmin()
         || (isSignedIn() && userId == request.auth.uid
-            && !request.resource.data.diff(resource.data).affectedKeys()
-                  .hasAny(['role', 'status', 'linkedChildIds', 'assignedGroupIds', 'consentGiven', 'consentDate']));
+            && (
+              !request.resource.data.diff(resource.data).affectedKeys()
+                .hasAny(['role', 'status', 'assignedGroupIds', 'consentGiven', 'consentDate'])
+              && (
+                !request.resource.data.diff(resource.data).affectedKeys().hasAny(['linkedChildIds'])
+                || (
+                  isParent()
+                  && resource.data.linkedChildIds is list
+                  && request.resource.data.linkedChildIds is list
+                  && request.resource.data.linkedChildIds.size() == resource.data.linkedChildIds.size() + 1
+                  && request.resource.data.linkedChildIds.hasAll(resource.data.linkedChildIds)
+                  && request.resource.data.linkedChildIds[request.resource.data.linkedChildIds.size() - 1] is string
+                  && exists(/databases/$(database)/documents/students/$(request.resource.data.linkedChildIds[request.resource.data.linkedChildIds.size() - 1]))
+                  && get(/databases/$(database)/documents/students/$(request.resource.data.linkedChildIds[request.resource.data.linkedChildIds.size() - 1])).data.parentIds.hasAll([request.auth.uid])
+                )
+              )
+            ));
 
       allow delete: if isAdmin();
     }
@@ -83,7 +98,19 @@ service cloud.firestore {
         teacherHasAnyGroup(resource.data.groupIds) ||
         parentHasChild(studentId)
       );
-      allow create, update, delete: if isAdmin();
+      allow create: if isAdmin()
+        || (isParent()
+          && request.resource.data.keys().hasOnly(['name', 'parentIds', 'groupMemberships', 'groupIds', 'createdByParentId', 'createdAt'])
+          && request.resource.data.parentIds == [request.auth.uid]
+          && request.resource.data.createdByParentId == request.auth.uid
+          && request.resource.data.groupMemberships == []
+          && request.resource.data.groupIds == []);
+      allow update: if isAdmin()
+        || (isParent()
+          && parentHasChild(studentId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'updatedAt'])
+          && request.resource.data.name is string);
+      allow delete: if isAdmin();
     }
 
     match /groups/{groupId} {

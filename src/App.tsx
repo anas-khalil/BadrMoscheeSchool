@@ -116,8 +116,10 @@ const translations: Record<Locale, Record<string, string>> = {
     authError: 'Unable to complete authentication. Check your details and try again.', forgotPassword: 'Forgot password?', passwordResetSent: 'Password reset email sent.',
     pendingNote: 'Your account is pending admin approval.'
     ,approvals: 'Approvals', groups: 'Groups', pendingParents: 'Pending parent accounts', approve: 'Approve', approved: 'Parent approved', approvalError: 'Could not update this account.', approvalEmailFailed: 'The account was approved, but the email notification could not be sent.', eventTitle: 'Event title', eventDate: 'Event date', eventAudience: 'Audience', allSchool: 'Everyone', createEvent: 'Create event', eventCreated: 'Event created.', group: 'Group', studentId: 'Student ID', studentName: 'Student name', assignmentTitle: 'Assignment title', description: 'Description', dueDate: 'Due date', createAssignment: 'Post assignment', assignmentCreated: 'Assignment posted', attendanceStatus: 'Status', present: 'Present', absent: 'Absent', late: 'Late', saveAttendance: 'Save attendance', attendanceSaved: 'Attendance saved', loginButton: 'Login', signupButton: 'Sign up', chooseAccountType: 'Choose account type', accountType: 'Account type', signupNote: 'All new accounts require admin approval.', accountCreated: 'Account created. Please wait for admin approval.', groupId: 'Group ID', subject: 'Subject', level: 'Level', teacherUid: 'Teacher UID', studentIds: 'Students', schedule: 'Weekly schedule', createGroup: 'Create group', groupCreated: 'Group created and assigned.', attended: 'Attended', markAttendance: 'Mark Saturday attendance', attendanceDate: 'Session date', attendanceSummary: 'Attendance summary', attendanceRate: 'Attendance rate', viewHistory: 'View student history', history: 'History', noAttendanceData: 'No attendance data yet.', saturdayOnly: 'Please choose a Saturday.', messageText: 'Message', sendMessage: 'Send message', noRecords: 'No records yet.', existingGroups: 'Existing groups', noGroups: 'No groups created yet.', edit: 'Edit', deleteAction: 'Delete', updateGroup: 'Update group', groupUpdated: 'Group updated.', groupDeleted: 'Group deleted.', cancelEdit: 'Cancel edit', confirmDeleteGroup: 'Delete this group? This cannot be undone.', sentOn: 'Sent', inbox: 'Inbox', sent: 'Sent', back: 'Back'
-    ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child', name: 'Full name', students: 'Students', teachers: 'Teachers', unreadMessages: 'Unread messages', unreadAssignments: 'Unread assignments', recipientType: 'Send to', everyone: 'Everyone', groupRecipient: 'Group', teacherRecipient: 'Teacher', parentRecipient: 'Parent', individualRecipient: 'Individual parent', recipient: 'Recipient', selectRecipient: 'Select recipient', messageSent: 'Message sent.'
-    ,consentGuardian: 'I confirm that I am the parent or legal guardian of the child being registered.'
+    ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child', name: 'Full name', students: 'Students', teachers: 'Teachers', unreadMessages: 'Unread messages', unreadAssignments: 'Unread assignments', recipientType: 'Send to', everyone: 'Everyone', groupRecipient: 'Group', teacherRecipient: 'Teacher', parentRecipient: 'Parent', individualRecipient: 'Individual parent', recipient: 'Recipient', selectRecipient: 'Select recipient', messageSent: 'Message sent.',
+
+    manageChildren: 'Manage children', addChild: 'Add child', editChild: 'Edit child', childName: 'Child name', saveChild: 'Save child', childAdded: 'Child added.', childUpdated: 'Child updated.', additionalChildrenNote: 'After your account is activated, you can add additional children from your dashboard.', selectChild: 'Select child',
+    consentGuardian: 'I confirm that I am the parent or legal guardian of the child being registered.'
     ,consentTeacherRole: 'I confirm that I am a teacher or staff member of the Badr Mosque School.'
     ,consentData: "I consent to my child's name, attendance records, and homework data being stored by Badr Mosque School in Germany for educational administration purposes. I understand I may withdraw this consent at any time by contacting the school."
     ,consentTeacherData: 'I consent to my name and contact details being stored by Badr Mosque School in Germany for educational administration purposes. I understand I may withdraw this consent at any time.'
@@ -176,8 +178,10 @@ const translations: Record<Locale, Record<string, string>> = {
     authError: 'Anmeldung nicht möglich. Bitte Daten prüfen und erneut versuchen.', forgotPassword: 'Passwort vergessen?', passwordResetSent: 'E-Mail zum Zurücksetzen des Passworts wurde gesendet.',
     pendingNote: 'Ihr Konto wartet auf die Genehmigung durch die Verwaltung.'
     ,approvals: 'Genehmigungen', groups: 'Gruppen', pendingParents: 'Ausstehende Elternkonten', approve: 'Genehmigen', approved: 'Elternkonto genehmigt', approvalError: 'Konto konnte nicht aktualisiert werden.', approvalEmailFailed: 'Das Konto wurde genehmigt, aber die E-Mail-Benachrichtigung konnte nicht gesendet werden.', eventTitle: 'Veranstaltungstitel', eventDate: 'Veranstaltungsdatum', eventAudience: 'Zielgruppe', allSchool: 'Alle', createEvent: 'Veranstaltung erstellen', eventCreated: 'Veranstaltung erstellt.', group: 'Gruppe', studentId: 'Schüler-ID', studentName: 'Name des Schülers', assignmentTitle: 'Aufgabentitel', description: 'Beschreibung', dueDate: 'Fälligkeitsdatum', createAssignment: 'Aufgabe veröffentlichen', assignmentCreated: 'Aufgabe veröffentlicht', attendanceStatus: 'Status', present: 'Anwesend', absent: 'Abwesend', late: 'Verspätet', saveAttendance: 'Anwesenheit speichern', attendanceSaved: 'Anwesenheit gespeichert', loginButton: 'Anmelden', signupButton: 'Registrieren', chooseAccountType: 'Kontotyp auswählen', accountType: 'Kontotyp', signupNote: 'Alle neuen Konten benötigen eine Genehmigung.', accountCreated: 'Konto erstellt. Bitte warten Sie auf die Genehmigung.', groupId: 'Gruppen-ID', subject: 'Fach', level: 'Stufe', teacherUid: 'Lehrer-UID', studentIds: 'Schüler', schedule: 'Wochenplan', createGroup: 'Gruppe erstellen', groupCreated: 'Gruppe erstellt und zugewiesen.', attended: 'Anwesend', markAttendance: 'Samstagsanwesenheit erfassen', attendanceDate: 'Unterrichtsdatum', attendanceSummary: 'Anwesenheitsübersicht', attendanceRate: 'Anwesenheitsquote', viewHistory: 'Schülerverlauf anzeigen', history: 'Verlauf', noAttendanceData: 'Noch keine Anwesenheitsdaten.', saturdayOnly: 'Bitte wählen Sie einen Samstag.'
-    ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name', students: 'Schüler', teachers: 'Lehrer', unreadMessages: 'Ungelesene Nachrichten', unreadAssignments: 'Ungelesene Aufgaben', recipientType: 'Senden an', everyone: 'Alle', groupRecipient: 'Gruppe', teacherRecipient: 'Lehrer', parentRecipient: 'Elternteil', individualRecipient: 'Einzelnen Elternteil', recipient: 'Empfänger', selectRecipient: 'Empfänger auswählen', messageSent: 'Nachricht gesendet.', sendMessage: 'Nachricht senden', noRecords: 'Noch keine Einträge.', existingGroups: 'Bestehende Gruppen', noGroups: 'Noch keine Gruppen erstellt.', edit: 'Bearbeiten', deleteAction: 'Löschen', updateGroup: 'Gruppe aktualisieren', groupUpdated: 'Gruppe aktualisiert.', groupDeleted: 'Gruppe gelöscht.', cancelEdit: 'Bearbeitung abbrechen', confirmDeleteGroup: 'Diese Gruppe löschen? Dies kann nicht rückgängig gemacht werden.', sentOn: 'Gesendet', inbox: 'Posteingang', sent: 'Gesendet', back: 'Zurück'
-    ,consentGuardian: 'Ich bestätige, dass ich der Elternteil oder Erziehungsberechtigte des anzumeldenden Kindes bin.'
+    ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name', students: 'Schüler', teachers: 'Lehrer', unreadMessages: 'Ungelesene Nachrichten', unreadAssignments: 'Ungelesene Aufgaben', recipientType: 'Senden an', everyone: 'Alle', groupRecipient: 'Gruppe', teacherRecipient: 'Lehrer', parentRecipient: 'Elternteil', individualRecipient: 'Einzelnen Elternteil', recipient: 'Empfänger', selectRecipient: 'Empfänger auswählen', messageSent: 'Nachricht gesendet.', sendMessage: 'Nachricht senden', noRecords: 'Noch keine Einträge.', existingGroups: 'Bestehende Gruppen', noGroups: 'Noch keine Gruppen erstellt.', edit: 'Bearbeiten', deleteAction: 'Löschen', updateGroup: 'Gruppe aktualisieren', groupUpdated: 'Gruppe aktualisiert.', groupDeleted: 'Gruppe gelöscht.', cancelEdit: 'Bearbeitung abbrechen', confirmDeleteGroup: 'Diese Gruppe löschen? Dies kann nicht rückgängig gemacht werden.', sentOn: 'Gesendet', inbox: 'Posteingang', sent: 'Gesendet', back: 'Zurück',
+
+    manageChildren: 'Kinder verwalten', addChild: 'Kind hinzufügen', editChild: 'Kind bearbeiten', childName: 'Name des Kindes', saveChild: 'Kind speichern', childAdded: 'Kind hinzugefügt.', childUpdated: 'Kind aktualisiert.', additionalChildrenNote: 'Nach der Aktivierung Ihres Kontos können Sie weitere Kinder über Ihr Dashboard hinzufügen.', selectChild: 'Kind auswählen',
+    consentGuardian: 'Ich bestätige, dass ich der Elternteil oder Erziehungsberechtigte des anzumeldenden Kindes bin.'
     ,consentTeacherRole: 'Ich bestätige, dass ich ein Lehrer oder Mitarbeiter der Badr Moschee Schule bin.'
     ,consentData: 'Ich stimme zu, dass Name, Anwesenheitsaufzeichnungen und Hausaufgabendaten meines Kindes von der Badr Moschee Schule in Deutschland zu schulverwaltungszwecken gespeichert werden. Ich weiß, dass ich diese Einwilligung jederzeit widerrufen kann.'
     ,consentTeacherData: 'Ich stimme zu, dass mein Name und meine Kontaktdaten von der Badr Moschee Schule in Deutschland zu schulverwaltungszwecken gespeichert werden. Ich weiß, dass ich diese Einwilligung jederzeit widerrufen kann.'
@@ -236,8 +240,10 @@ const translations: Record<Locale, Record<string, string>> = {
     authError: 'تعذر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.', forgotPassword: 'نسيت كلمة المرور؟', passwordResetSent: 'تم إرسال رسالة إعادة تعيين كلمة المرور.',
     pendingNote: 'حسابك بانتظار موافقة الإدارة.'
     ,approvals: 'الموافقات', groups: 'المجموعات', pendingParents: 'حسابات أولياء الأمور المعلقة', approve: 'موافقة', approved: 'تمت الموافقة على الحساب', approvalError: 'تعذر تحديث الحساب.', approvalEmailFailed: 'تمت الموافقة على الحساب، ولكن تعذر إرسال إشعار البريد الإلكتروني.', eventTitle: 'عنوان الفعالية', eventDate: 'تاريخ الفعالية', eventAudience: 'الجمهور', allSchool: 'الجميع', createEvent: 'إنشاء فعالية', eventCreated: 'تم إنشاء الفعالية.', group: 'المجموعة', studentId: 'معرف الطالب', studentName: 'اسم الطالب', assignmentTitle: 'عنوان الواجب', description: 'الوصف', dueDate: 'تاريخ التسليم', createAssignment: 'نشر الواجب', assignmentCreated: 'تم نشر الواجب', attendanceStatus: 'الحالة', present: 'حاضر', absent: 'غائب', late: 'متأخر', saveAttendance: 'حفظ الحضور', attendanceSaved: 'تم حفظ الحضور', loginButton: 'تسجيل الدخول', signupButton: 'إنشاء حساب', chooseAccountType: 'اختر نوع الحساب', accountType: 'نوع الحساب', signupNote: 'تحتاج جميع الحسابات الجديدة إلى موافقة الإدارة.', accountCreated: 'تم إنشاء الحساب. يرجى انتظار موافقة الإدارة.', groupId: 'معرف المجموعة', subject: 'المادة', level: 'المستوى', teacherUid: 'معرف المعلم', studentIds: 'الطلاب', schedule: 'الجدول الأسبوعي', createGroup: 'إنشاء مجموعة', groupCreated: 'تم إنشاء المجموعة وتعيينها.', attended: 'حاضر', markAttendance: 'تسجيل حضور السبت', attendanceDate: 'تاريخ الحصة', attendanceSummary: 'ملخص الحضور', attendanceRate: 'نسبة الحضور', viewHistory: 'عرض سجل الطالب', history: 'السجل', noAttendanceData: 'لا توجد بيانات حضور بعد.', saturdayOnly: 'يرجى اختيار يوم السبت.'
-    ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل', students: 'الطلاب', teachers: 'المعلمون', unreadMessages: 'الرسائل غير المقروءة', unreadAssignments: 'الواجبات غير المقروءة', recipientType: 'إرسال إلى', everyone: 'الجميع', groupRecipient: 'مجموعة', teacherRecipient: 'معلم', parentRecipient: 'ولي أمر', individualRecipient: 'ولي أمر محدد', recipient: 'المستلم', selectRecipient: 'اختر المستلم', messageSent: 'تم إرسال الرسالة.', sendMessage: 'إرسال الرسالة', noRecords: 'لا توجد سجلات بعد.', existingGroups: 'المجموعات الحالية', noGroups: 'لم يتم إنشاء أي مجموعات بعد.', edit: 'تعديل', deleteAction: 'حذف', updateGroup: 'تحديث المجموعة', groupUpdated: 'تم تحديث المجموعة.', groupDeleted: 'تم حذف المجموعة.', cancelEdit: 'إلغاء التعديل', confirmDeleteGroup: 'حذف هذه المجموعة؟ لا يمكن التراجع عن هذا.', sentOn: 'أُرسل في', inbox: 'الوارد', sent: 'المرسلة', back: 'رجوع'
-    ,consentGuardian: 'أؤكد أنني ولي أمر الطفل المسجَّل أو أحد والديه.'
+    ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل', students: 'الطلاب', teachers: 'المعلمون', unreadMessages: 'الرسائل غير المقروءة', unreadAssignments: 'الواجبات غير المقروءة', recipientType: 'إرسال إلى', everyone: 'الجميع', groupRecipient: 'مجموعة', teacherRecipient: 'معلم', parentRecipient: 'ولي أمر', individualRecipient: 'ولي أمر محدد', recipient: 'المستلم', selectRecipient: 'اختر المستلم', messageSent: 'تم إرسال الرسالة.', sendMessage: 'إرسال الرسالة', noRecords: 'لا توجد سجلات بعد.', existingGroups: 'المجموعات الحالية', noGroups: 'لم يتم إنشاء أي مجموعات بعد.', edit: 'تعديل', deleteAction: 'حذف', updateGroup: 'تحديث المجموعة', groupUpdated: 'تم تحديث المجموعة.', groupDeleted: 'تم حذف المجموعة.', cancelEdit: 'إلغاء التعديل', confirmDeleteGroup: 'حذف هذه المجموعة؟ لا يمكن التراجع عن هذا.', sentOn: 'أُرسل في', inbox: 'الوارد', sent: 'المرسلة', back: 'رجوع',
+
+    manageChildren: 'إدارة الأبناء', addChild: 'إضافة ابن', editChild: 'تعديل الابن', childName: 'اسم الابن', saveChild: 'حفظ الابن', childAdded: 'تمت إضافة الابن.', childUpdated: 'تم تحديث بيانات الابن.', additionalChildrenNote: 'بعد تفعيل حسابك، يمكنك إضافة أبناء آخرين من لوحة التحكم.', selectChild: 'اختر الابن',
+    consentGuardian: 'أؤكد أنني ولي أمر الطفل المسجَّل أو أحد والديه.'
     ,consentTeacherRole: 'أؤكد أنني معلم أو موظف في المدرسة العربية بمسجد بدر.'
     ,consentData: 'أوافق على تخزين اسم طفلي وسجلات حضوره وبيانات واجباته المدرسية من قِبل المدرسة العربية بمسجد بدر في ألمانيا لأغراض الإدارة التعليمية. أفهم أن بإمكاني سحب هذه الموافقة في أي وقت عبر التواصل مع المدرسة.'
     ,consentTeacherData: 'أوافق على تخزين اسمي وبيانات الاتصال الخاصة بي من قِبل المدرسة العربية بمسجد بدر في ألمانيا لأغراض الإدارة التعليمية. أفهم أن بإمكاني سحب هذه الموافقة في أي وقت.'
@@ -287,6 +293,11 @@ function App() {
   const [pendingParents, setPendingParents] = useState<Array<{ id: string; email: string; name: string; role: Role; childId: string; requestedChildName: string; language: Locale }>>([]);
   const [approvalMessage, setApprovalMessage] = useState('');
   const [linkedChildIds, setLinkedChildIds] = useState<string[]>([]);
+  const [selectedChildId, setSelectedChildId] = useState('');
+  const [parentChildren, setParentChildren] = useState<DirectoryStudent[]>([]);
+  const [childFormName, setChildFormName] = useState('');
+  const [editingChildId, setEditingChildId] = useState<string | null>(null);
+  const [childMessage, setChildMessage] = useState('');
   const [assignedGroupIds, setAssignedGroupIds] = useState<string[]>([]);
   const [liveItems, setLiveItems] = useState<Partial<Record<Section, LiveItem[]>>>({});
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -518,8 +529,16 @@ function App() {
         setRole(nextRole as Role);
         setProfileStatus(profile?.status === 'active' ? 'active' : 'pending');
         setProfileName(profile?.name || '');
-        setLinkedChildIds(profile?.linkedChildIds || []);
+        const nextLinkedChildIds: string[] = profile?.linkedChildIds || [];
+        setLinkedChildIds(nextLinkedChildIds);
+        setSelectedChildId((current) => current && nextLinkedChildIds.includes(current) ? current : nextLinkedChildIds[0] || '');
         setAssignedGroupIds(profile?.assignedGroupIds || []);
+        if (nextRole === 'parent') {
+          const childDocs = await getExistingDocs('students', nextLinkedChildIds);
+          setParentChildren(childDocs.map((item) => ({ id: item.id, name: item.data()?.name || item.id, parentIds: item.data()?.parentIds || [] })));
+        } else {
+          setParentChildren([]);
+        }
 
         if (nextRole === 'admin') {
           const pendingSnapshot = await getDocs(query(collection(db, 'users'), where('status', '==', 'pending')));
@@ -565,10 +584,10 @@ function App() {
           snapshots = [await getDocs(query(collection(db, 'messages'), where('participants', 'array-contains', user.uid)))];
         } else {
           const collectionName = activeSection === 'assignments' ? 'assignments' : 'attendance';
-          let identifiers = role === 'parent' ? linkedChildIds : assignedGroupIds;
+          let identifiers = role === 'parent' ? (selectedChildId ? [selectedChildId] : []) : assignedGroupIds;
           let field = role === 'parent' ? 'studentId' : 'groupId';
           if (role === 'parent' && activeSection === 'assignments') {
-            const childSnapshots = await getExistingDocs('students', linkedChildIds);
+            const childSnapshots = await getExistingDocs('students', selectedChildId ? [selectedChildId] : []);
             identifiers = [...new Set(childSnapshots.flatMap((snapshot) => (snapshot.data()?.groupMemberships || []).map((membership: { groupId: string }) => membership.groupId)))];
             field = 'groupId';
           }
@@ -630,7 +649,7 @@ function App() {
 
     void loadSection();
     return () => { cancelled = true; };
-  }, [activeSection, assignedGroupIds, availableGroups, availableUsers, linkedChildIds, locale, profileName, profileStatus, role, user]);
+  }, [activeSection, assignedGroupIds, availableGroups, availableUsers, linkedChildIds, locale, profileName, profileStatus, role, selectedChildId, user]);
 
   const loadGroupsList = useCallback(async () => {
     const [groupSnapshot, studentSnapshot] = await Promise.all([
@@ -717,23 +736,24 @@ function App() {
         }).catch(() => { if (!cancelled) setGroupAttendance([]); });
     }
 
-    if (role === 'parent') {
-      void Promise.all(linkedChildIds.map((studentId) => getDocs(query(collection(db, 'attendance'), where('studentId', '==', studentId)))))
-        .then((snapshots) => {
+    if (role === 'parent' && selectedChildId) {
+      void getDocs(query(collection(db, 'attendance'), where('studentId', '==', selectedChildId)))
+        .then((snapshot) => {
           if (cancelled) return;
-          const studentNameById = new Map(availableStudents.map((student) => [student.id, student.name]));
-          setParentAttendance(linkedChildIds.map((studentId, index) => ({
-            studentId,
-            studentName: studentNameById.get(studentId) || studentId,
-            days: snapshots[index].docs
-              .map((item) => item.data())
+          const child = parentChildren.find((item) => item.id === selectedChildId);
+          setParentAttendance([{
+            studentId: selectedChildId,
+            studentName: child?.name || selectedChildId,
+            days: snapshot.docs.map((item) => item.data())
               .map((record) => ({ date: record.date || '', status: record.status || 'absent' }))
               .sort((a, b) => b.date.localeCompare(a.date))
-          })));
+          }]);
         }).catch(() => { if (!cancelled) setParentAttendance([]); });
+    } else if (role === 'parent') {
+      setParentAttendance([]);
     }
     return () => { cancelled = true; };
-  }, [activeSection, assignedGroupIds, attendanceGroupId, availableStudents, linkedChildIds, profileStatus, role, user]);
+  }, [activeSection, assignedGroupIds, attendanceGroupId, availableStudents, linkedChildIds, parentChildren, profileStatus, role, selectedChildId, user]);
 
   useEffect(() => {
     if (activeSection !== 'attendance') {
@@ -824,6 +844,47 @@ function App() {
     } catch {
       setGroupMessage(t.approvalError);
     }
+  };
+
+  const saveChild = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!user || role !== 'parent' || profileStatus !== 'active' || !childFormName.trim()) return;
+    try {
+      if (editingChildId) {
+        await updateDoc(doc(db, 'students', editingChildId), {
+          name: childFormName.trim(),
+          updatedAt: new Date().toISOString()
+        });
+        setParentChildren((children) => children.map((child) => child.id === editingChildId ? { ...child, name: childFormName.trim() } : child));
+        setChildMessage(t.childUpdated);
+      } else {
+        const studentReference = await addDoc(collection(db, 'students'), {
+          name: childFormName.trim(),
+          parentIds: [user.uid],
+          groupMemberships: [],
+          groupIds: [],
+          createdByParentId: user.uid,
+          createdAt: new Date().toISOString()
+        });
+        const newChild = { id: studentReference.id, name: childFormName.trim(), parentIds: [user.uid] };
+        const nextChildIds = [...linkedChildIds, studentReference.id];
+        await updateDoc(doc(db, 'users', user.uid), { linkedChildIds: nextChildIds, updatedAt: new Date().toISOString() });
+        setLinkedChildIds(nextChildIds);
+        setParentChildren((children) => [...children, newChild]);
+        setSelectedChildId(studentReference.id);
+        setChildMessage(t.childAdded);
+      }
+      setChildFormName('');
+      setEditingChildId(null);
+    } catch {
+      setChildMessage(t.approvalError);
+    }
+  };
+
+  const startEditChild = (child: DirectoryStudent) => {
+    setEditingChildId(child.id);
+    setChildFormName(child.name);
+    setChildMessage('');
   };
 
   const createCalendarEvent = async (event: FormEvent<HTMLFormElement>) => {
@@ -1182,6 +1243,28 @@ function App() {
             </div>
           </div>
 
+          {activeSection === 'dashboard' && role === 'parent' && (
+            <article className="detail-card event-form-card">
+              <span className="eyebrow">{t.parent}</span>
+              <h3>{t.manageChildren}</h3>
+              <p className="muted">{t.additionalChildrenNote}</p>
+              <div className="child-list">
+                {parentChildren.map((child) => (
+                  <div className="detail-card-heading" key={child.id}>
+                    <strong>{child.name}</strong>
+                    <button className="secondary-action small-action" type="button" onClick={() => startEditChild(child)}>{t.editChild}</button>
+                  </div>
+                ))}
+              </div>
+              <form className="event-form" onSubmit={saveChild}>
+                <label>{t.childName}<input value={childFormName} onChange={(event) => setChildFormName(event.target.value)} required /></label>
+                <button className="primary-action" type="submit">{editingChildId ? t.saveChild : t.addChild}</button>
+                {editingChildId && <button className="secondary-action" type="button" onClick={() => { setEditingChildId(null); setChildFormName(''); }}>{t.cancelEdit}</button>}
+              </form>
+              {childMessage && <p className="approval-message">{childMessage}</p>}
+            </article>
+          )}
+
           {['dashboard', 'calendar', 'assignments'].includes(activeSection) && (
             <article className="detail-card">
               <div className="detail-card-heading">
@@ -1213,6 +1296,16 @@ function App() {
                 <button className="primary-action" type="submit">{t.createEvent}</button>
               </form>
               {eventMessage && <p className="approval-message">{eventMessage}</p>}
+            </article>
+          )}
+
+          {activeSection === 'assignments' && role === 'parent' && (
+            <article className="detail-card">
+              <label>{t.selectChild}
+                <select value={selectedChildId} onChange={(event) => setSelectedChildId(event.target.value)}>
+                  {parentChildren.map((child) => <option key={child.id} value={child.id}>{child.name}</option>)}
+                </select>
+              </label>
             </article>
           )}
 
@@ -1348,6 +1441,11 @@ function App() {
 
           {activeSection === 'attendance' && role === 'parent' && (
             <article className="detail-card attendance-summary-card">
+              <label>{t.selectChild}
+                <select value={selectedChildId} onChange={(event) => setSelectedChildId(event.target.value)}>
+                  {parentChildren.map((child) => <option key={child.id} value={child.id}>{child.name}</option>)}
+                </select>
+              </label>
               <span className="eyebrow">{t.parent}</span>
               <h3>{t.attendanceSummary}</h3>
               {parentAttendance.length === 0 ? <p className="muted">{t.noAttendanceData}</p> : parentAttendance.map((child) => (
@@ -1501,6 +1599,7 @@ function App() {
                 <form className="auth-form" onSubmit={handleAuthentication}>
                   {authMode === 'signup' && (
                     <>
+                      {signupRole === 'parent' && <p className="muted">{t.additionalChildrenNote}</p>}
                       <label>{t.accountType}<select value={signupRole} onChange={(event) => setSignupRole(event.target.value as Role)}><option value="parent">{t.parent}</option><option value="teacher">{t.teacher}</option></select></label>
                       <label>{t.name}<input value={signupName} onChange={(event) => setSignupName(event.target.value)} required /></label>
                       {signupRole === 'parent' && <label>{t.studentName}<input value={signupStudentName} onChange={(event) => setSignupStudentName(event.target.value)} required /></label>}
