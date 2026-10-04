@@ -197,6 +197,11 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create, update, delete: if isAdmin();
     }
+
+    match /schoolSettings/{settingId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
     match /emailNotifications/{notificationId} {
       allow create: if isSignedIn()
         && request.resource.data.actorUserId == request.auth.uid

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { createUserWithEmailAndPassword, deleteUser, getAuth, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, type User } from 'firebase/auth';
-import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { registerSW } from 'virtual:pwa-register';
 import { queueEmailNotification } from './emailNotifications';
 
@@ -81,6 +81,71 @@ type ParentAttendanceEntry = { studentId: string; studentName: string; days: Arr
 
 type MessageRecord = { id: string; senderId: string; senderName: string; text: string; sentAt: string; createdAt: string };
 
+type ClassScheduleRow = {
+  id: string;
+  from: string;
+  to: string;
+  isBreak: boolean;
+  note?: string;
+  cells: string[];
+};
+
+const DEFAULT_CLASS_SCHEDULE: ClassScheduleRow[] = [
+  { id: 'slot-1330', from: '13:30', to: '14:15', isBreak: false, cells: [
+    'Klasse 2+3 / 3+2\nKoranunterricht / حصة القرآن\nLehrer: Anas + Ayman / المعلم: أنس + أيمن',
+    'Vorschulklasse / الصف التحضيري\nQaida Nooraniya + Islamunterricht / الطريقة النورانية + الدين الإسلامي\nLehrerin: Salam / المعلمة: سلام',
+    'Klasse 1 / الصف 1\nArabischunterricht 1 / حصة اللغة العربية 1\nLehrerin: Farida / المعلمة: فريدة',
+    ''
+  ]},
+  { id: 'break-1415', from: '14:15', to: '14:25', isBreak: true, note: 'Pause / استراحة', cells: ['', '', '', ''] },
+  { id: 'slot-1425', from: '14:25', to: '15:10', isBreak: false, cells: [
+    'Klasse 2+3 / 3+2\nQaida Nooraniya + Islamunterricht / الطريقة النورانية + الدين الإسلامي\nLehrerin: Salam / المعلمة: سلام',
+    'Vorschulklasse / الصف التحضيري\nKoranunterricht / حصة القرآن\nLehrerin: Asmaa / المعلمة: أسماء',
+    'Klasse 1 / الصف 1\nArabischunterricht 2 / حصة اللغة العربية 2\nLehrerin: Farida / المعلمة: فريدة',
+    ''
+  ]},
+  { id: 'break-1510', from: '15:10', to: '15:20', isBreak: true, note: 'Pause / استراحة', cells: ['', '', '', ''] },
+  { id: 'slot-1520', from: '15:20', to: '16:05', isBreak: false, cells: [
+    'Klasse 2 / الصف 2\nArabischunterricht 1 / حصة اللغة العربية 1\nLehrerin: Shaimaa + Aisha / المعلمة: شيماء + عائشة',
+    'Vorschulklasse / الصف التحضيري\nArabischunterricht 1 / حصة اللغة العربية 1\nLehrerin: Farida / المعلمة: فريدة',
+    'Klasse 1 / الصف 1\nKoranunterricht / حصة القرآن\nLehrerin: Salam / المعلمة: سلام',
+    'Klasse 3 / الصف 3\nArabischunterricht 1 / حصة اللغة العربية 1\nLehrerin: Asmaa / المعلمة: أسماء'
+  ]},
+  { id: 'break-1605', from: '16:05', to: '16:15', isBreak: true, note: 'Pause / استراحة', cells: ['', '', '', ''] },
+  { id: 'slot-1615', from: '16:15', to: '17:00', isBreak: false, cells: [
+    'Klasse 2 / الصف 2\nArabischunterricht 2 / حصة اللغة العربية 2\nLehrerin: Shaimaa + Aisha / المعلمة: شيماء + عائشة',
+    'Vorschulklasse / الصف التحضيري\nArabischunterricht 2 / حصة اللغة العربية 2\nLehrerin: Farida / المعلمة: فريدة',
+    'Klasse 1 / الصف 1\nQaida Nooraniya + Islamunterricht / الطريقة النورانية + الدين الإسلامي\nLehrerin: Salam / المعلمة: سلام',
+    'Klasse 3 / الصف 3\nArabischunterricht 2 / حصة اللغة العربية 2\nLehrerin: Asmaa / المعلمة: أسماء'
+  ]}
+];
+
+const normalizeClassScheduleRows = (value: unknown): ClassScheduleRow[] => {
+  if (!Array.isArray(value)) return DEFAULT_CLASS_SCHEDULE;
+  const rows = value.flatMap((raw, index) => {
+    if (!raw || typeof raw !== 'object') return [];
+    const item = raw as { from?: unknown; to?: unknown; isBreak?: unknown; note?: unknown; cells?: unknown; id?: unknown };
+    const cells = Array.isArray(item.cells)
+      ? item.cells.slice(0, 4).map((cell) => typeof cell === 'string' ? cell : '').concat(['', '', '', '']).slice(0, 4)
+      : ['', '', '', ''];
+    const from = typeof item.from === 'string' ? item.from : '';
+    const to = typeof item.to === 'string' ? item.to : '';
+    if (!from && !to) return [];
+    return [{ id: typeof item.id === 'string' && item.id ? item.id : `slot-${index + 1}`, from, to, isBreak: item.isBreak === true, note: typeof item.note === 'string' ? item.note : '', cells }];
+  });
+  return rows.length ? rows : DEFAULT_CLASS_SCHEDULE;
+};
+
+const classScheduleRooms = ['scheduleMenRoom', 'scheduleKitchen', 'scheduleWomenRoom', 'scheduleOffice'] as const;
+
+const scheduleDurationMinutes = (from: string, to: string) => {
+  const [fromHours, fromMinutes] = from.split(':').map(Number);
+  const [toHours, toMinutes] = to.split(':').map(Number);
+  if ([fromHours, fromMinutes, toHours, toMinutes].some((value) => Number.isNaN(value))) return 0;
+  return Math.max(0, (toHours * 60 + toMinutes) - (fromHours * 60 + fromMinutes));
+};
+
+
 const translations: Record<Locale, Record<string, string>> = {
   en: {
     appTitle: 'Badr Mosque School',
@@ -118,7 +183,7 @@ const translations: Record<Locale, Record<string, string>> = {
     ,approvals: 'Approvals', groups: 'Groups', pendingParents: 'Pending parent accounts', approve: 'Approve', approved: 'Parent approved', approvalError: 'Could not update this account.', approvalEmailFailed: 'The account was approved, but the email notification could not be sent.', eventTitle: 'Event title', eventDate: 'Event date', eventAudience: 'Audience', allSchool: 'Everyone', createEvent: 'Create event', eventCreated: 'Event created.', group: 'Group', studentId: 'Student ID', studentName: 'Student name', assignmentTitle: 'Assignment title', description: 'Description', dueDate: 'Due date', createAssignment: 'Post assignment', assignmentCreated: 'Assignment posted', attendanceStatus: 'Status', present: 'Present', absent: 'Absent', late: 'Late', saveAttendance: 'Save attendance', attendanceSaved: 'Attendance saved', loginButton: 'Login', signupButton: 'Sign up', chooseAccountType: 'Choose account type', accountType: 'Account type', signupNote: 'All new accounts require admin approval.', accountCreated: 'Account created. Please wait for admin approval.', groupId: 'Group ID', subject: 'Subject', level: 'Level', teacherUid: 'Teacher UID', studentIds: 'Students', schedule: 'Weekly schedule', createGroup: 'Create group', groupCreated: 'Group created and assigned.', attended: 'Attended', markAttendance: 'Mark Saturday attendance', attendanceDate: 'Session date', attendanceSummary: 'Attendance summary', attendanceRate: 'Attendance rate', viewHistory: 'View student history', history: 'History', noAttendanceData: 'No attendance data yet.', saturdayOnly: 'Please choose a Saturday.', messageText: 'Message', sendMessage: 'Send message', noRecords: 'No records yet.', existingGroups: 'Existing groups', noGroups: 'No groups created yet.', edit: 'Edit', deleteAction: 'Delete', updateGroup: 'Update group', groupUpdated: 'Group updated.', groupDeleted: 'Group deleted.', cancelEdit: 'Cancel edit', confirmDeleteGroup: 'Delete this group? This cannot be undone.', sentOn: 'Sent', inbox: 'Inbox', sent: 'Sent', back: 'Back'
     ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child', name: 'Full name', students: 'Students', teachers: 'Teachers', unreadMessages: 'Unread messages', unreadAssignments: 'Unread assignments', recipientType: 'Send to', everyone: 'Everyone', groupRecipient: 'Group', teacherRecipient: 'Teacher', parentRecipient: 'Parent', individualRecipient: 'Individual parent', recipient: 'Recipient', selectRecipient: 'Select recipient', messageSent: 'Message sent.',
 
-    manageChildren: 'Manage children', addChild: 'Add child', editChild: 'Edit child', childName: 'Child name', saveChild: 'Save child', childAdded: 'Child added.', childUpdated: 'Child updated.', additionalChildrenNote: 'After your account is activated, you can add additional children from your dashboard.', placementFormNotice: 'IMPORTANT: Before continuing with registration, please complete the child level assessment form for Arabic and Quran. This form helps us determine the appropriate level for your child. The form must be completed before you can finish registration.', placementFormLink: 'Open the Arabic & Quran Level Assessment Form', selectChild: 'Select child',
+    classSchedule: 'Class schedule', scheduleMenRoom: "Men's prayer room", scheduleKitchen: 'Kitchen', scheduleWomenRoom: "Women's prayer room", scheduleOffice: 'Office', scheduleDuration: 'Duration', scheduleFrom: 'From', scheduleTo: 'To', scheduleBreak: 'Break', scheduleBreakLabel: 'Break label', scheduleEdit: 'Edit class schedule', scheduleSave: 'Save schedule', scheduleCancel: 'Cancel', scheduleAddRow: 'Add time slot', scheduleDeleteRow: 'Delete row', scheduleSaved: 'Class schedule saved.', scheduleLoadError: 'Could not load the class schedule.', manageChildren: 'Manage children', addChild: 'Add child', editChild: 'Edit child', childName: 'Child name', saveChild: 'Save child', childAdded: 'Child added.', childUpdated: 'Child updated.', additionalChildrenNote: 'After your account is activated, you can add additional children from your dashboard.', placementFormNotice: 'IMPORTANT: Before continuing with registration, please complete the child level assessment form for Arabic and Quran. This form helps us determine the appropriate level for your child. The form must be completed before you can finish registration.', placementFormLink: 'Open the Arabic & Quran Level Assessment Form', selectChild: 'Select child',
     consentGuardian: 'I confirm that I am the parent or legal guardian of the child being registered.'
     ,consentTeacherRole: 'I confirm that I am a teacher or staff member of the Badr Mosque School.'
     ,consentData: "I consent to my child's name, attendance records, and homework data being stored by Badr Mosque School in Germany for educational administration purposes. I understand I may withdraw this consent at any time by contacting the school."
@@ -180,7 +245,7 @@ const translations: Record<Locale, Record<string, string>> = {
     ,approvals: 'Genehmigungen', groups: 'Gruppen', pendingParents: 'Ausstehende Elternkonten', approve: 'Genehmigen', approved: 'Elternkonto genehmigt', approvalError: 'Konto konnte nicht aktualisiert werden.', approvalEmailFailed: 'Das Konto wurde genehmigt, aber die E-Mail-Benachrichtigung konnte nicht gesendet werden.', eventTitle: 'Veranstaltungstitel', eventDate: 'Veranstaltungsdatum', eventAudience: 'Zielgruppe', allSchool: 'Alle', createEvent: 'Veranstaltung erstellen', eventCreated: 'Veranstaltung erstellt.', group: 'Gruppe', studentId: 'Schüler-ID', studentName: 'Name des Schülers', assignmentTitle: 'Aufgabentitel', description: 'Beschreibung', dueDate: 'Fälligkeitsdatum', createAssignment: 'Aufgabe veröffentlichen', assignmentCreated: 'Aufgabe veröffentlicht', attendanceStatus: 'Status', present: 'Anwesend', absent: 'Abwesend', late: 'Verspätet', saveAttendance: 'Anwesenheit speichern', attendanceSaved: 'Anwesenheit gespeichert', loginButton: 'Anmelden', signupButton: 'Registrieren', chooseAccountType: 'Kontotyp auswählen', accountType: 'Kontotyp', signupNote: 'Alle neuen Konten benötigen eine Genehmigung.', accountCreated: 'Konto erstellt. Bitte warten Sie auf die Genehmigung.', groupId: 'Gruppen-ID', subject: 'Fach', level: 'Stufe', teacherUid: 'Lehrer-UID', studentIds: 'Schüler', schedule: 'Wochenplan', createGroup: 'Gruppe erstellen', groupCreated: 'Gruppe erstellt und zugewiesen.', attended: 'Anwesend', markAttendance: 'Samstagsanwesenheit erfassen', attendanceDate: 'Unterrichtsdatum', attendanceSummary: 'Anwesenheitsübersicht', attendanceRate: 'Anwesenheitsquote', viewHistory: 'Schülerverlauf anzeigen', history: 'Verlauf', noAttendanceData: 'Noch keine Anwesenheitsdaten.', saturdayOnly: 'Bitte wählen Sie einen Samstag.'
     ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name', students: 'Schüler', teachers: 'Lehrer', unreadMessages: 'Ungelesene Nachrichten', unreadAssignments: 'Ungelesene Aufgaben', recipientType: 'Senden an', everyone: 'Alle', groupRecipient: 'Gruppe', teacherRecipient: 'Lehrer', parentRecipient: 'Elternteil', individualRecipient: 'Einzelnen Elternteil', recipient: 'Empfänger', selectRecipient: 'Empfänger auswählen', messageSent: 'Nachricht gesendet.', sendMessage: 'Nachricht senden', noRecords: 'Noch keine Einträge.', existingGroups: 'Bestehende Gruppen', noGroups: 'Noch keine Gruppen erstellt.', edit: 'Bearbeiten', deleteAction: 'Löschen', updateGroup: 'Gruppe aktualisieren', groupUpdated: 'Gruppe aktualisiert.', groupDeleted: 'Gruppe gelöscht.', cancelEdit: 'Bearbeitung abbrechen', confirmDeleteGroup: 'Diese Gruppe löschen? Dies kann nicht rückgängig gemacht werden.', sentOn: 'Gesendet', inbox: 'Posteingang', sent: 'Gesendet', back: 'Zurück',
 
-    manageChildren: 'Kinder verwalten', addChild: 'Kind hinzufügen', editChild: 'Kind bearbeiten', childName: 'Name des Kindes', saveChild: 'Kind speichern', childAdded: 'Kind hinzugefügt.', childUpdated: 'Kind aktualisiert.', additionalChildrenNote: 'Nach der Aktivierung Ihres Kontos können Sie weitere Kinder über Ihr Dashboard hinzufügen.', placementFormNotice: 'WICHTIG: Bitte füllen Sie vor der Fortsetzung der Registrierung das Einstufungsformular für Ihr Kind in Arabisch und Quran aus. Das Formular hilft uns dabei, das passende Niveau für Ihr Kind zu bestimmen. Das Formular muss vor Abschluss der Registrierung ausgefüllt werden.', placementFormLink: 'Einstufungsformular für Arabisch & Quran öffnen', selectChild: 'Kind auswählen',
+    classSchedule: 'Stundenplan', scheduleMenRoom: 'Männer-Gebetsraum', scheduleKitchen: 'Küche', scheduleWomenRoom: 'Frauen-Gebetsraum', scheduleOffice: 'Büro', scheduleDuration: 'Dauer', scheduleFrom: 'Von', scheduleTo: 'Bis', scheduleBreak: 'Pause', scheduleBreakLabel: 'Pausenbezeichnung', scheduleEdit: 'Stundenplan bearbeiten', scheduleSave: 'Stundenplan speichern', scheduleCancel: 'Abbrechen', scheduleAddRow: 'Zeitfenster hinzufügen', scheduleDeleteRow: 'Zeile löschen', scheduleSaved: 'Stundenplan gespeichert.', scheduleLoadError: 'Stundenplan konnte nicht geladen werden.', manageChildren: 'Kinder verwalten', addChild: 'Kind hinzufügen', editChild: 'Kind bearbeiten', childName: 'Name des Kindes', saveChild: 'Kind speichern', childAdded: 'Kind hinzugefügt.', childUpdated: 'Kind aktualisiert.', additionalChildrenNote: 'Nach der Aktivierung Ihres Kontos können Sie weitere Kinder über Ihr Dashboard hinzufügen.', placementFormNotice: 'WICHTIG: Bitte füllen Sie vor der Fortsetzung der Registrierung das Einstufungsformular für Ihr Kind in Arabisch und Quran aus. Das Formular hilft uns dabei, das passende Niveau für Ihr Kind zu bestimmen. Das Formular muss vor Abschluss der Registrierung ausgefüllt werden.', placementFormLink: 'Einstufungsformular für Arabisch & Quran öffnen', selectChild: 'Kind auswählen',
     consentGuardian: 'Ich bestätige, dass ich der Elternteil oder Erziehungsberechtigte des anzumeldenden Kindes bin.'
     ,consentTeacherRole: 'Ich bestätige, dass ich ein Lehrer oder Mitarbeiter der Badr Moschee Schule bin.'
     ,consentData: 'Ich stimme zu, dass Name, Anwesenheitsaufzeichnungen und Hausaufgabendaten meines Kindes von der Badr Moschee Schule in Deutschland zu schulverwaltungszwecken gespeichert werden. Ich weiß, dass ich diese Einwilligung jederzeit widerrufen kann.'
@@ -242,7 +307,7 @@ const translations: Record<Locale, Record<string, string>> = {
     ,approvals: 'الموافقات', groups: 'المجموعات', pendingParents: 'حسابات أولياء الأمور المعلقة', approve: 'موافقة', approved: 'تمت الموافقة على الحساب', approvalError: 'تعذر تحديث الحساب.', approvalEmailFailed: 'تمت الموافقة على الحساب، ولكن تعذر إرسال إشعار البريد الإلكتروني.', eventTitle: 'عنوان الفعالية', eventDate: 'تاريخ الفعالية', eventAudience: 'الجمهور', allSchool: 'الجميع', createEvent: 'إنشاء فعالية', eventCreated: 'تم إنشاء الفعالية.', group: 'المجموعة', studentId: 'معرف الطالب', studentName: 'اسم الطالب', assignmentTitle: 'عنوان الواجب', description: 'الوصف', dueDate: 'تاريخ التسليم', createAssignment: 'نشر الواجب', assignmentCreated: 'تم نشر الواجب', attendanceStatus: 'الحالة', present: 'حاضر', absent: 'غائب', late: 'متأخر', saveAttendance: 'حفظ الحضور', attendanceSaved: 'تم حفظ الحضور', loginButton: 'تسجيل الدخول', signupButton: 'إنشاء حساب', chooseAccountType: 'اختر نوع الحساب', accountType: 'نوع الحساب', signupNote: 'تحتاج جميع الحسابات الجديدة إلى موافقة الإدارة.', accountCreated: 'تم إنشاء الحساب. يرجى انتظار موافقة الإدارة.', groupId: 'معرف المجموعة', subject: 'المادة', level: 'المستوى', teacherUid: 'معرف المعلم', studentIds: 'الطلاب', schedule: 'الجدول الأسبوعي', createGroup: 'إنشاء مجموعة', groupCreated: 'تم إنشاء المجموعة وتعيينها.', attended: 'حاضر', markAttendance: 'تسجيل حضور السبت', attendanceDate: 'تاريخ الحصة', attendanceSummary: 'ملخص الحضور', attendanceRate: 'نسبة الحضور', viewHistory: 'عرض سجل الطالب', history: 'السجل', noAttendanceData: 'لا توجد بيانات حضور بعد.', saturdayOnly: 'يرجى اختيار يوم السبت.'
     ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل', students: 'الطلاب', teachers: 'المعلمون', unreadMessages: 'الرسائل غير المقروءة', unreadAssignments: 'الواجبات غير المقروءة', recipientType: 'إرسال إلى', everyone: 'الجميع', groupRecipient: 'مجموعة', teacherRecipient: 'معلم', parentRecipient: 'ولي أمر', individualRecipient: 'ولي أمر محدد', recipient: 'المستلم', selectRecipient: 'اختر المستلم', messageSent: 'تم إرسال الرسالة.', sendMessage: 'إرسال الرسالة', noRecords: 'لا توجد سجلات بعد.', existingGroups: 'المجموعات الحالية', noGroups: 'لم يتم إنشاء أي مجموعات بعد.', edit: 'تعديل', deleteAction: 'حذف', updateGroup: 'تحديث المجموعة', groupUpdated: 'تم تحديث المجموعة.', groupDeleted: 'تم حذف المجموعة.', cancelEdit: 'إلغاء التعديل', confirmDeleteGroup: 'حذف هذه المجموعة؟ لا يمكن التراجع عن هذا.', sentOn: 'أُرسل في', inbox: 'الوارد', sent: 'المرسلة', back: 'رجوع',
 
-    manageChildren: 'إدارة الأبناء', addChild: 'إضافة ابن', editChild: 'تعديل الابن', childName: 'اسم الابن', saveChild: 'حفظ الابن', childAdded: 'تمت إضافة الابن.', childUpdated: 'تم تحديث بيانات الابن.', additionalChildrenNote: 'بعد تفعيل حسابك، يمكنك إضافة أبناء آخرين من لوحة التحكم.', placementFormNotice: '⚠️ مهم: قبل متابعة التسجيل، يرجى تعبئة استمارة تحديد مستوى الطفل في اللغة العربية والقرآن الكريم. تساعدنا هذه الاستمارة في تحديد المستوى المناسب لطفلكم، ويجب تعبئتها قبل إكمال التسجيل.', placementFormLink: 'فتح استمارة تحديد مستوى اللغة العربية والقرآن الكريم', selectChild: 'اختر الابن',
+    classSchedule: 'جدول الحصص', scheduleMenRoom: 'مسجد الرجال', scheduleKitchen: 'المطبخ', scheduleWomenRoom: 'مسجد النساء', scheduleOffice: 'المكتب', scheduleDuration: 'المدة', scheduleFrom: 'من', scheduleTo: 'إلى', scheduleBreak: 'استراحة', scheduleBreakLabel: 'وصف الاستراحة', scheduleEdit: 'تعديل جدول الحصص', scheduleSave: 'حفظ جدول الحصص', scheduleCancel: 'إلغاء', scheduleAddRow: 'إضافة فترة زمنية', scheduleDeleteRow: 'حذف الصف', scheduleSaved: 'تم حفظ جدول الحصص.', scheduleLoadError: 'تعذر تحميل جدول الحصص.', manageChildren: 'إدارة الأبناء', addChild: 'إضافة ابن', editChild: 'تعديل الابن', childName: 'اسم الابن', saveChild: 'حفظ الابن', childAdded: 'تمت إضافة الابن.', childUpdated: 'تم تحديث بيانات الابن.', additionalChildrenNote: 'بعد تفعيل حسابك، يمكنك إضافة أبناء آخرين من لوحة التحكم.', placementFormNotice: '⚠️ مهم: قبل متابعة التسجيل، يرجى تعبئة استمارة تحديد مستوى الطفل في اللغة العربية والقرآن الكريم. تساعدنا هذه الاستمارة في تحديد المستوى المناسب لطفلكم، ويجب تعبئتها قبل إكمال التسجيل.', placementFormLink: 'فتح استمارة تحديد مستوى اللغة العربية والقرآن الكريم', selectChild: 'اختر الابن',
     consentGuardian: 'أؤكد أنني ولي أمر الطفل المسجَّل أو أحد والديه.'
     ,consentTeacherRole: 'أؤكد أنني معلم أو موظف في المدرسة العربية بمسجد بدر.'
     ,consentData: 'أوافق على تخزين اسم طفلي وسجلات حضوره وبيانات واجباته المدرسية من قِبل المدرسة العربية بمسجد بدر في ألمانيا لأغراض الإدارة التعليمية. أفهم أن بإمكاني سحب هذه الموافقة في أي وقت عبر التواصل مع المدرسة.'
@@ -340,6 +405,10 @@ function App() {
   const [dashboardCounts, setDashboardCounts] = useState({ students: 0, teachers: 0, groups: 0, unreadMessages: 0, unreadAssignments: 0 });
   const [manageableGroups, setManageableGroups] = useState<Array<{ id: string; subject: string; level: string; teacherId: string; teacherName: string; studentIds: string[]; studentNames: string[]; schedule: string }>>([]);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [classSchedule, setClassSchedule] = useState<ClassScheduleRow[]>(DEFAULT_CLASS_SCHEDULE);
+  const [scheduleDraft, setScheduleDraft] = useState<ClassScheduleRow[] | null>(null);
+  const [scheduleMessage, setScheduleMessage] = useState('');
+
 
   useEffect(() => {
     const savedLocale = (localStorage.getItem('badr-school-locale') as Locale) || 'en';
@@ -349,6 +418,17 @@ function App() {
 
     return () => updateSW && updateSW();
   }, []);
+
+  useEffect(() => {
+    if (!user || profileStatus !== 'active') return;
+    const unsubscribe = onSnapshot(doc(db, 'schoolSettings', 'classSchedule'), (snapshot) => {
+      setClassSchedule(snapshot.exists() ? normalizeClassScheduleRows(snapshot.data().rows) : DEFAULT_CLASS_SCHEDULE);
+    }, () => {
+      setClassSchedule(DEFAULT_CLASS_SCHEDULE);
+      setScheduleMessage(translations[locale].scheduleLoadError);
+    });
+    return () => unsubscribe();
+  }, [locale, profileStatus, user]);
 
   useEffect(() => {
     if (!user || profileStatus !== 'active') return;
@@ -761,6 +841,23 @@ function App() {
       setAttendanceViewDate(null);
     }
   }, [activeSection]);
+
+  const startScheduleEdit = () => setScheduleDraft(classSchedule.map((row) => ({ ...row, cells: [...row.cells] })));
+  const cancelScheduleEdit = () => { setScheduleDraft(null); setScheduleMessage(''); };
+  const updateScheduleDraftRow = (index: number, patch: Partial<ClassScheduleRow>) => setScheduleDraft((current) => current ? current.map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row) : current);
+  const updateScheduleDraftCell = (rowIndex: number, cellIndex: number, value: string) => setScheduleDraft((current) => current ? current.map((row, index) => {
+    if (index !== rowIndex) return row;
+    const cells = [...row.cells]; cells[cellIndex] = value; return { ...row, cells };
+  }) : current);
+  const addScheduleRow = () => setScheduleDraft((current) => current ? [...current, { id: `slot-${Date.now()}`, from: '', to: '', isBreak: false, note: '', cells: ['', '', '', ''] }] : current);
+  const deleteScheduleRow = (index: number) => setScheduleDraft((current) => current ? current.filter((_, rowIndex) => rowIndex !== index) : current);
+  const saveClassSchedule = async () => {
+    if (!user || role !== 'admin' || !scheduleDraft || scheduleDraft.length === 0) return;
+    try {
+      await setDoc(doc(db, 'schoolSettings', 'classSchedule'), { rows: normalizeClassScheduleRows(scheduleDraft), updatedAt: new Date().toISOString(), updatedBy: user.uid });
+      setScheduleDraft(null); setScheduleMessage(t.scheduleSaved);
+    } catch { setScheduleMessage(t.approvalError); }
+  };
 
   const approveParent = async (parentId: string, accountRole: Role, childId: string) => {
     try {
@@ -1221,6 +1318,41 @@ function App() {
             </article>
           ) : (
             <>
+          {activeSection === 'dashboard' && (
+            <article className="detail-card schedule-card">
+              <div className="detail-card-heading">
+                <div><span className="eyebrow">{t.classSchedule}</span><h3>{t.classSchedule}</h3></div>
+                {role === 'admin' && !scheduleDraft && <button className="secondary-action small-action" type="button" onClick={startScheduleEdit}>{t.scheduleEdit}</button>}
+              </div>
+              {scheduleMessage && <p className="approval-message schedule-message">{scheduleMessage}</p>}
+              <div className="schedule-table-wrap">
+                <table className="schedule-table">
+                  <thead><tr><th>{t.scheduleDuration}</th><th>{t.scheduleFrom}</th><th>{t.scheduleTo}</th>{classScheduleRooms.map((key) => <th key={key}>{t[key]}</th>)}</tr></thead>
+                  <tbody>{classSchedule.map((row) => <tr key={row.id} className={row.isBreak ? 'schedule-break-row' : ''}>
+                    <td>{scheduleDurationMinutes(row.from, row.to) || '—'}{scheduleDurationMinutes(row.from, row.to) ? ' min' : ''}</td><td>{row.from || '—'}</td><td>{row.to || '—'}</td>
+                    {row.isBreak ? <td className="schedule-break-cell" colSpan={4}>{row.note || t.scheduleBreak}</td> : row.cells.map((cell, i) => <td className={`schedule-cell schedule-room-${i}`} key={`${row.id}-${i}`}>{cell || '—'}</td>)}
+                  </tr>)}</tbody>
+                </table>
+              </div>
+              {role === 'admin' && scheduleDraft && <div className="schedule-admin-editor">
+                <div className="detail-card-heading"><div><span className="eyebrow">{t.admin}</span><h3>{t.scheduleEdit}</h3></div>
+                  <div className="approval-controls"><button className="primary-action small-action" type="button" onClick={() => void saveClassSchedule()}>{t.scheduleSave}</button><button className="secondary-action small-action" type="button" onClick={cancelScheduleEdit}>{t.scheduleCancel}</button></div>
+                </div>
+                <div className="schedule-editor-list">{scheduleDraft.map((row, ri) => <div className="schedule-editor-row" key={row.id}>
+                  <div className="schedule-editor-meta">
+                    <label>{t.scheduleFrom}<input type="time" value={row.from} onChange={(e) => updateScheduleDraftRow(ri, { from: e.target.value })}/></label>
+                    <label>{t.scheduleTo}<input type="time" value={row.to} onChange={(e) => updateScheduleDraftRow(ri, { to: e.target.value })}/></label>
+                    <label className="schedule-break-toggle"><input type="checkbox" checked={row.isBreak} onChange={(e) => updateScheduleDraftRow(ri, { isBreak: e.target.checked })}/> {t.scheduleBreak}</label>
+                    {row.isBreak && <label>{t.scheduleBreakLabel}<input value={row.note || ''} onChange={(e) => updateScheduleDraftRow(ri, { note: e.target.value })}/></label>}
+                    <button className="secondary-action small-action" type="button" onClick={() => deleteScheduleRow(ri)}>{t.scheduleDeleteRow}</button>
+                  </div>
+                  {!row.isBreak && <div className="schedule-editor-cells">{classScheduleRooms.map((key, ci) => <label key={key}>{t[key]}<textarea value={row.cells[ci] || ''} onChange={(e) => updateScheduleDraftCell(ri, ci, e.target.value)} rows={4}/></label>)}</div>}
+                </div>)}</div>
+                <button className="secondary-action" type="button" onClick={addScheduleRow}>{t.scheduleAddRow}</button>
+              </div>}
+            </article>
+          )}
+
           <div className="hero-card">
             <div>
               <span className="badge">{t[role]}</span>
