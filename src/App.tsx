@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { createUserWithEmailAndPassword, deleteUser, getAuth, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, type User } from 'firebase/auth';
-import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, onSnapshot, query, setDoc, updateDoc, where, writeBatch } from 'firebase/firestore';
 import { registerSW } from 'virtual:pwa-register';
 import { queueEmailNotification } from './emailNotifications';
 
@@ -181,7 +181,7 @@ const translations: Record<Locale, Record<string, string>> = {
     authError: 'Unable to complete authentication. Check your details and try again.', forgotPassword: 'Forgot password?', passwordResetSent: 'Password reset email sent.',
     pendingNote: 'Your account is pending admin approval.'
     ,approvals: 'Approvals', groups: 'Groups', pendingParents: 'Pending parent accounts', approve: 'Approve', approved: 'Parent approved', approvalError: 'Could not update this account.', approvalEmailFailed: 'The account was approved, but the email notification could not be sent.', eventTitle: 'Event title', eventDate: 'Event date', eventAudience: 'Audience', allSchool: 'Everyone', createEvent: 'Create event', eventCreated: 'Event created.', group: 'Group', studentId: 'Student ID', studentName: 'Student name', assignmentTitle: 'Assignment title', description: 'Description', dueDate: 'Due date', createAssignment: 'Post assignment', assignmentCreated: 'Assignment posted', attendanceStatus: 'Status', present: 'Present', absent: 'Absent', late: 'Late', saveAttendance: 'Save attendance', attendanceSaved: 'Attendance saved', loginButton: 'Login', signupButton: 'Sign up', chooseAccountType: 'Choose account type', accountType: 'Account type', signupNote: 'All new accounts require admin approval.', accountCreated: 'Account created. Please wait for admin approval.', groupId: 'Group ID', subject: 'Subject', level: 'Level', teacherUid: 'Teacher UID', studentIds: 'Students', schedule: 'Weekly schedule', createGroup: 'Create group', groupCreated: 'Group created and assigned.', attended: 'Attended', markAttendance: 'Mark Saturday attendance', attendanceDate: 'Session date', attendanceSummary: 'Attendance summary', attendanceRate: 'Attendance rate', viewHistory: 'View student history', history: 'History', noAttendanceData: 'No attendance data yet.', saturdayOnly: 'Please choose a Saturday.', messageText: 'Message', sendMessage: 'Send message', noRecords: 'No records yet.', existingGroups: 'Existing groups', noGroups: 'No groups created yet.', edit: 'Edit', deleteAction: 'Delete', updateGroup: 'Update group', groupUpdated: 'Group updated.', groupDeleted: 'Group deleted.', cancelEdit: 'Cancel edit', confirmDeleteGroup: 'Delete this group? This cannot be undone.', sentOn: 'Sent', inbox: 'Inbox', sent: 'Sent', back: 'Back'
-    ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child', name: 'Full name', students: 'Students', teachers: 'Teachers', unreadMessages: 'Unread messages', unreadAssignments: 'Unread assignments', recipientType: 'Send to', everyone: 'Everyone', groupRecipient: 'Group', teacherRecipient: 'Teacher', parentRecipient: 'Parent', individualRecipient: 'Individual parent', recipient: 'Recipient', selectRecipient: 'Select recipient', messageSent: 'Message sent.',
+    ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child', approvedParents: 'Approved parent accounts', parentName: 'Parent', noStudent: 'No student record', createStudentForParent: 'Create student', enterChildName: 'Enter child name', studentLinked: 'Student record created and linked.', name: 'Full name', students: 'Students', teachers: 'Teachers', unreadMessages: 'Unread messages', unreadAssignments: 'Unread assignments', recipientType: 'Send to', everyone: 'Everyone', groupRecipient: 'Group', teacherRecipient: 'Teacher', parentRecipient: 'Parent', individualRecipient: 'Individual parent', recipient: 'Recipient', selectRecipient: 'Select recipient', messageSent: 'Message sent.',
 
     classSchedule: 'Class schedule', scheduleMenRoom: "Men's prayer room", scheduleKitchen: 'Kitchen', scheduleWomenRoom: "Women's prayer room", scheduleOffice: 'Office', scheduleDuration: 'Duration', scheduleFrom: 'From', scheduleTo: 'To', scheduleBreak: 'Break', scheduleBreakLabel: 'Break label', scheduleEdit: 'Edit class schedule', scheduleSave: 'Save schedule', scheduleCancel: 'Cancel', scheduleAddRow: 'Add time slot', scheduleDeleteRow: 'Delete row', scheduleSaved: 'Class schedule saved.', scheduleLoadError: 'Could not load the class schedule.', manageChildren: 'Manage children', addChild: 'Add child', editChild: 'Edit child', childName: 'Child name', saveChild: 'Save child', childAdded: 'Child added.', childUpdated: 'Child updated.', additionalChildrenNote: 'After your account is activated, you can add additional children from your dashboard.', placementFormNotice: 'IMPORTANT: Before continuing with registration, please complete the child level assessment form for Arabic and Quran. This form helps us determine the appropriate level for your child. The form must be completed before you can finish registration.', placementFormLink: 'Open the Arabic & Quran Level Assessment Form', selectChild: 'Select child',
     consentGuardian: 'I confirm that I am the parent or legal guardian of the child being registered.'
@@ -243,7 +243,7 @@ const translations: Record<Locale, Record<string, string>> = {
     authError: 'Anmeldung nicht möglich. Bitte Daten prüfen und erneut versuchen.', forgotPassword: 'Passwort vergessen?', passwordResetSent: 'E-Mail zum Zurücksetzen des Passworts wurde gesendet.',
     pendingNote: 'Ihr Konto wartet auf die Genehmigung durch die Verwaltung.'
     ,approvals: 'Genehmigungen', groups: 'Gruppen', pendingParents: 'Ausstehende Elternkonten', approve: 'Genehmigen', approved: 'Elternkonto genehmigt', approvalError: 'Konto konnte nicht aktualisiert werden.', approvalEmailFailed: 'Das Konto wurde genehmigt, aber die E-Mail-Benachrichtigung konnte nicht gesendet werden.', eventTitle: 'Veranstaltungstitel', eventDate: 'Veranstaltungsdatum', eventAudience: 'Zielgruppe', allSchool: 'Alle', createEvent: 'Veranstaltung erstellen', eventCreated: 'Veranstaltung erstellt.', group: 'Gruppe', studentId: 'Schüler-ID', studentName: 'Name des Schülers', assignmentTitle: 'Aufgabentitel', description: 'Beschreibung', dueDate: 'Fälligkeitsdatum', createAssignment: 'Aufgabe veröffentlichen', assignmentCreated: 'Aufgabe veröffentlicht', attendanceStatus: 'Status', present: 'Anwesend', absent: 'Abwesend', late: 'Verspätet', saveAttendance: 'Anwesenheit speichern', attendanceSaved: 'Anwesenheit gespeichert', loginButton: 'Anmelden', signupButton: 'Registrieren', chooseAccountType: 'Kontotyp auswählen', accountType: 'Kontotyp', signupNote: 'Alle neuen Konten benötigen eine Genehmigung.', accountCreated: 'Konto erstellt. Bitte warten Sie auf die Genehmigung.', groupId: 'Gruppen-ID', subject: 'Fach', level: 'Stufe', teacherUid: 'Lehrer-UID', studentIds: 'Schüler', schedule: 'Wochenplan', createGroup: 'Gruppe erstellen', groupCreated: 'Gruppe erstellt und zugewiesen.', attended: 'Anwesend', markAttendance: 'Samstagsanwesenheit erfassen', attendanceDate: 'Unterrichtsdatum', attendanceSummary: 'Anwesenheitsübersicht', attendanceRate: 'Anwesenheitsquote', viewHistory: 'Schülerverlauf anzeigen', history: 'Verlauf', noAttendanceData: 'Noch keine Anwesenheitsdaten.', saturdayOnly: 'Bitte wählen Sie einen Samstag.'
-    ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name', students: 'Schüler', teachers: 'Lehrer', unreadMessages: 'Ungelesene Nachrichten', unreadAssignments: 'Ungelesene Aufgaben', recipientType: 'Senden an', everyone: 'Alle', groupRecipient: 'Gruppe', teacherRecipient: 'Lehrer', parentRecipient: 'Elternteil', individualRecipient: 'Einzelnen Elternteil', recipient: 'Empfänger', selectRecipient: 'Empfänger auswählen', messageSent: 'Nachricht gesendet.', sendMessage: 'Nachricht senden', noRecords: 'Noch keine Einträge.', existingGroups: 'Bestehende Gruppen', noGroups: 'Noch keine Gruppen erstellt.', edit: 'Bearbeiten', deleteAction: 'Löschen', updateGroup: 'Gruppe aktualisieren', groupUpdated: 'Gruppe aktualisiert.', groupDeleted: 'Gruppe gelöscht.', cancelEdit: 'Bearbeitung abbrechen', confirmDeleteGroup: 'Diese Gruppe löschen? Dies kann nicht rückgängig gemacht werden.', sentOn: 'Gesendet', inbox: 'Posteingang', sent: 'Gesendet', back: 'Zurück',
+    ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', approvedParents: 'Genehmigte Elternkonten', parentName: 'Elternteil', noStudent: 'Kein Schülerdatensatz', createStudentForParent: 'Schüler erstellen', enterChildName: 'Name des Kindes eingeben', studentLinked: 'Schülerdatensatz erstellt und verknüpft.', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name', students: 'Schüler', teachers: 'Lehrer', unreadMessages: 'Ungelesene Nachrichten', unreadAssignments: 'Ungelesene Aufgaben', recipientType: 'Senden an', everyone: 'Alle', groupRecipient: 'Gruppe', teacherRecipient: 'Lehrer', parentRecipient: 'Elternteil', individualRecipient: 'Einzelnen Elternteil', recipient: 'Empfänger', selectRecipient: 'Empfänger auswählen', messageSent: 'Nachricht gesendet.', sendMessage: 'Nachricht senden', noRecords: 'Noch keine Einträge.', existingGroups: 'Bestehende Gruppen', noGroups: 'Noch keine Gruppen erstellt.', edit: 'Bearbeiten', deleteAction: 'Löschen', updateGroup: 'Gruppe aktualisieren', groupUpdated: 'Gruppe aktualisiert.', groupDeleted: 'Gruppe gelöscht.', cancelEdit: 'Bearbeitung abbrechen', confirmDeleteGroup: 'Diese Gruppe löschen? Dies kann nicht rückgängig gemacht werden.', sentOn: 'Gesendet', inbox: 'Posteingang', sent: 'Gesendet', back: 'Zurück',
 
     classSchedule: 'Stundenplan', scheduleMenRoom: 'Männer-Gebetsraum', scheduleKitchen: 'Küche', scheduleWomenRoom: 'Frauen-Gebetsraum', scheduleOffice: 'Büro', scheduleDuration: 'Dauer', scheduleFrom: 'Von', scheduleTo: 'Bis', scheduleBreak: 'Pause', scheduleBreakLabel: 'Pausenbezeichnung', scheduleEdit: 'Stundenplan bearbeiten', scheduleSave: 'Stundenplan speichern', scheduleCancel: 'Abbrechen', scheduleAddRow: 'Zeitfenster hinzufügen', scheduleDeleteRow: 'Zeile löschen', scheduleSaved: 'Stundenplan gespeichert.', scheduleLoadError: 'Stundenplan konnte nicht geladen werden.', manageChildren: 'Kinder verwalten', addChild: 'Kind hinzufügen', editChild: 'Kind bearbeiten', childName: 'Name des Kindes', saveChild: 'Kind speichern', childAdded: 'Kind hinzugefügt.', childUpdated: 'Kind aktualisiert.', additionalChildrenNote: 'Nach der Aktivierung Ihres Kontos können Sie weitere Kinder über Ihr Dashboard hinzufügen.', placementFormNotice: 'WICHTIG: Bitte füllen Sie vor der Fortsetzung der Registrierung das Einstufungsformular für Ihr Kind in Arabisch und Quran aus. Das Formular hilft uns dabei, das passende Niveau für Ihr Kind zu bestimmen. Das Formular muss vor Abschluss der Registrierung ausgefüllt werden.', placementFormLink: 'Einstufungsformular für Arabisch & Quran öffnen', selectChild: 'Kind auswählen',
     consentGuardian: 'Ich bestätige, dass ich der Elternteil oder Erziehungsberechtigte des anzumeldenden Kindes bin.'
@@ -305,7 +305,7 @@ const translations: Record<Locale, Record<string, string>> = {
     authError: 'تعذر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.', forgotPassword: 'نسيت كلمة المرور؟', passwordResetSent: 'تم إرسال رسالة إعادة تعيين كلمة المرور.',
     pendingNote: 'حسابك بانتظار موافقة الإدارة.'
     ,approvals: 'الموافقات', groups: 'المجموعات', pendingParents: 'حسابات أولياء الأمور المعلقة', approve: 'موافقة', approved: 'تمت الموافقة على الحساب', approvalError: 'تعذر تحديث الحساب.', approvalEmailFailed: 'تمت الموافقة على الحساب، ولكن تعذر إرسال إشعار البريد الإلكتروني.', eventTitle: 'عنوان الفعالية', eventDate: 'تاريخ الفعالية', eventAudience: 'الجمهور', allSchool: 'الجميع', createEvent: 'إنشاء فعالية', eventCreated: 'تم إنشاء الفعالية.', group: 'المجموعة', studentId: 'معرف الطالب', studentName: 'اسم الطالب', assignmentTitle: 'عنوان الواجب', description: 'الوصف', dueDate: 'تاريخ التسليم', createAssignment: 'نشر الواجب', assignmentCreated: 'تم نشر الواجب', attendanceStatus: 'الحالة', present: 'حاضر', absent: 'غائب', late: 'متأخر', saveAttendance: 'حفظ الحضور', attendanceSaved: 'تم حفظ الحضور', loginButton: 'تسجيل الدخول', signupButton: 'إنشاء حساب', chooseAccountType: 'اختر نوع الحساب', accountType: 'نوع الحساب', signupNote: 'تحتاج جميع الحسابات الجديدة إلى موافقة الإدارة.', accountCreated: 'تم إنشاء الحساب. يرجى انتظار موافقة الإدارة.', groupId: 'معرف المجموعة', subject: 'المادة', level: 'المستوى', teacherUid: 'معرف المعلم', studentIds: 'الطلاب', schedule: 'الجدول الأسبوعي', createGroup: 'إنشاء مجموعة', groupCreated: 'تم إنشاء المجموعة وتعيينها.', attended: 'حاضر', markAttendance: 'تسجيل حضور السبت', attendanceDate: 'تاريخ الحصة', attendanceSummary: 'ملخص الحضور', attendanceRate: 'نسبة الحضور', viewHistory: 'عرض سجل الطالب', history: 'السجل', noAttendanceData: 'لا توجد بيانات حضور بعد.', saturdayOnly: 'يرجى اختيار يوم السبت.'
-    ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل', students: 'الطلاب', teachers: 'المعلمون', unreadMessages: 'الرسائل غير المقروءة', unreadAssignments: 'الواجبات غير المقروءة', recipientType: 'إرسال إلى', everyone: 'الجميع', groupRecipient: 'مجموعة', teacherRecipient: 'معلم', parentRecipient: 'ولي أمر', individualRecipient: 'ولي أمر محدد', recipient: 'المستلم', selectRecipient: 'اختر المستلم', messageSent: 'تم إرسال الرسالة.', sendMessage: 'إرسال الرسالة', noRecords: 'لا توجد سجلات بعد.', existingGroups: 'المجموعات الحالية', noGroups: 'لم يتم إنشاء أي مجموعات بعد.', edit: 'تعديل', deleteAction: 'حذف', updateGroup: 'تحديث المجموعة', groupUpdated: 'تم تحديث المجموعة.', groupDeleted: 'تم حذف المجموعة.', cancelEdit: 'إلغاء التعديل', confirmDeleteGroup: 'حذف هذه المجموعة؟ لا يمكن التراجع عن هذا.', sentOn: 'أُرسل في', inbox: 'الوارد', sent: 'المرسلة', back: 'رجوع',
+    ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', approvedParents: 'حسابات أولياء الأمور المعتمدة', parentName: 'ولي الأمر', noStudent: 'لا يوجد سجل للطفل', createStudentForParent: 'إنشاء سجل للطفل', enterChildName: 'أدخل اسم الطفل', studentLinked: 'تم إنشاء سجل الطفل وربطه بولي الأمر.', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل', students: 'الطلاب', teachers: 'المعلمون', unreadMessages: 'الرسائل غير المقروءة', unreadAssignments: 'الواجبات غير المقروءة', recipientType: 'إرسال إلى', everyone: 'الجميع', groupRecipient: 'مجموعة', teacherRecipient: 'معلم', parentRecipient: 'ولي أمر', individualRecipient: 'ولي أمر محدد', recipient: 'المستلم', selectRecipient: 'اختر المستلم', messageSent: 'تم إرسال الرسالة.', sendMessage: 'إرسال الرسالة', noRecords: 'لا توجد سجلات بعد.', existingGroups: 'المجموعات الحالية', noGroups: 'لم يتم إنشاء أي مجموعات بعد.', edit: 'تعديل', deleteAction: 'حذف', updateGroup: 'تحديث المجموعة', groupUpdated: 'تم تحديث المجموعة.', groupDeleted: 'تم حذف المجموعة.', cancelEdit: 'إلغاء التعديل', confirmDeleteGroup: 'حذف هذه المجموعة؟ لا يمكن التراجع عن هذا.', sentOn: 'أُرسل في', inbox: 'الوارد', sent: 'المرسلة', back: 'رجوع',
 
     classSchedule: 'جدول الحصص', scheduleMenRoom: 'مسجد الرجال', scheduleKitchen: 'المطبخ', scheduleWomenRoom: 'مسجد النساء', scheduleOffice: 'المكتب', scheduleDuration: 'المدة', scheduleFrom: 'من', scheduleTo: 'إلى', scheduleBreak: 'استراحة', scheduleBreakLabel: 'وصف الاستراحة', scheduleEdit: 'تعديل جدول الحصص', scheduleSave: 'حفظ جدول الحصص', scheduleCancel: 'إلغاء', scheduleAddRow: 'إضافة فترة زمنية', scheduleDeleteRow: 'حذف الصف', scheduleSaved: 'تم حفظ جدول الحصص.', scheduleLoadError: 'تعذر تحميل جدول الحصص.', manageChildren: 'إدارة الأبناء', addChild: 'إضافة ابن', editChild: 'تعديل الابن', childName: 'اسم الابن', saveChild: 'حفظ الابن', childAdded: 'تمت إضافة الابن.', childUpdated: 'تم تحديث بيانات الابن.', additionalChildrenNote: 'بعد تفعيل حسابك، يمكنك إضافة أبناء آخرين من لوحة التحكم.', placementFormNotice: '⚠️ مهم: قبل متابعة التسجيل، يرجى تعبئة استمارة تحديد مستوى الطفل في اللغة العربية والقرآن الكريم. تساعدنا هذه الاستمارة في تحديد المستوى المناسب لطفلكم، ويجب تعبئتها قبل إكمال التسجيل.', placementFormLink: 'فتح استمارة تحديد مستوى اللغة العربية والقرآن الكريم', selectChild: 'اختر الابن',
     consentGuardian: 'أؤكد أنني ولي أمر الطفل المسجَّل أو أحد والديه.'
@@ -355,7 +355,9 @@ function App() {
   const [consentPolicy, setConsentPolicy] = useState(false);
   const [profileStatus, setProfileStatus] = useState<'pending' | 'active' | null>(null);
   const [profileName, setProfileName] = useState('');
-  const [pendingParents, setPendingParents] = useState<Array<{ id: string; email: string; name: string; role: Role; childId: string; requestedChildName: string; language: Locale }>>([]);
+  const [pendingParents, setPendingParents] = useState<Array<{ id: string; email: string; name: string; role: Role; requestedChildName: string; language: Locale }>>([]);
+  const [approvedParents, setApprovedParents] = useState<Array<{ id: string; email: string; name: string; requestedChildName: string; childNames: string[] }>>([]);
+  const [approvedParentStudentNames, setApprovedParentStudentNames] = useState<Record<string, string>>({});
   const [approvalMessage, setApprovalMessage] = useState('');
   const [linkedChildIds, setLinkedChildIds] = useState<string[]>([]);
   const [selectedChildId, setSelectedChildId] = useState('');
@@ -627,23 +629,25 @@ function App() {
             email: pendingDoc.data().email || '',
             name: pendingDoc.data().name || pendingDoc.data().email || 'Parent',
             role: pendingDoc.data().role || 'parent',
-            childId: '',
             requestedChildName: pendingDoc.data().requestedChildName || '',
             language: (pendingDoc.data().language || 'en') as Locale
           })));
-          const [teacherSnapshot, studentSnapshot] = await Promise.all([
+          const [teacherSnapshot, studentSnapshot, approvedParentSnapshot] = await Promise.all([
             getDocs(query(collection(db, 'users'), where('role', '==', 'teacher'), where('status', '==', 'active'))),
-            getDocs(collection(db, 'students'))
+            getDocs(collection(db, 'students')),
+            getDocs(query(collection(db, 'users'), where('role', '==', 'parent'), where('status', '==', 'active')))
           ]);
-          setAvailableTeachers(teacherSnapshot.docs.map((teacherDoc) => ({
-            id: teacherDoc.id,
-            name: teacherDoc.data().name || teacherDoc.data().email || teacherDoc.id,
-            email: teacherDoc.data().email || ''
-          })));
-          setAvailableStudents(studentSnapshot.docs.map((studentDoc) => ({
-            id: studentDoc.id,
-            name: studentDoc.data().name || studentDoc.id
-          })));
+          const studentDocs = studentSnapshot.docs.map((studentDoc) => ({ id: studentDoc.id, name: studentDoc.data().name || studentDoc.id, parentIds: studentDoc.data().parentIds || [] }));
+          setAvailableTeachers(teacherSnapshot.docs.map((teacherDoc) => ({ id: teacherDoc.id, name: teacherDoc.data().name || teacherDoc.data().email || teacherDoc.id, email: teacherDoc.data().email || '' })));
+          setAvailableStudents(studentDocs.map(({ id, name }) => ({ id, name })));
+          const approvedParentRows = approvedParentSnapshot.docs.map((parentDoc) => {
+            const data = parentDoc.data();
+            const linkedIds: string[] = Array.isArray(data.linkedChildIds) ? data.linkedChildIds : [];
+            const childNames = linkedIds.map((childId) => studentDocs.find((student) => student.id === childId)?.name).filter((name): name is string => Boolean(name));
+            return { id: parentDoc.id, email: data.email || '', name: data.name || data.email || parentDoc.id, requestedChildName: data.requestedChildName || '', childNames };
+          }).sort((a, b) => a.name.localeCompare(b.name));
+          setApprovedParents(approvedParentRows);
+          setApprovedParentStudentNames(Object.fromEntries(approvedParentRows.map((parent) => [parent.id, parent.requestedChildName])));
         }
       }).catch(() => setProfileStatus('pending'));
     });
@@ -859,27 +863,53 @@ function App() {
     } catch { setScheduleMessage(t.approvalError); }
   };
 
-  const approveParent = async (parentId: string, accountRole: Role, childId: string) => {
+  const approveParent = async (parentId: string, accountRole: Role) => {
+    const pendingAccount = pendingParents.find((parent) => parent.id === parentId);
+    if (!pendingAccount) return;
+
     try {
-      if (accountRole === 'parent' && childId.trim()) {
-        await updateDoc(doc(db, 'students', childId.trim()), { parentIds: arrayUnion(parentId) });
+      const batch = writeBatch(db);
+      let approvedChildId = '';
+
+      if (accountRole === 'parent') {
+        const studentName = pendingAccount.requestedChildName.trim();
+        if (!studentName) {
+          setApprovalMessage(t.approvalError);
+          return;
+        }
+
+        const studentReference = doc(collection(db, 'students'));
+        approvedChildId = studentReference.id;
+        batch.set(studentReference, {
+          name: studentName,
+          parentIds: [parentId],
+          groupMemberships: [],
+          groupIds: [],
+          createdAt: new Date().toISOString()
+        });
       }
-      await updateDoc(doc(db, 'users', parentId), {
+
+      batch.update(doc(db, 'users', parentId), {
         status: 'active',
-        ...(accountRole === 'parent' ? { linkedChildIds: childId.trim() ? [childId.trim()] : [] } : {})
+        ...(accountRole === 'parent' ? { linkedChildIds: [approvedChildId] } : {})
       });
+
       // Mirror the minimal, non-sensitive fields into the public `directory`
       // collection so this account shows up in every other role's message
       // recipient dropdown (see firestore.rules: users/{uid} stays
       // owner/admin-only, directory/{uid} is readable by any signed-in user).
-      const approvedParent = pendingParents.find((parent) => parent.id === parentId);
-      const approvedAccount = pendingParents.find((parent) => parent.id === parentId);
-      await setDoc(doc(db, 'directory', parentId), {
-        name: approvedParent?.name || approvedParent?.email || parentId,
+      batch.set(doc(db, 'directory', parentId), {
+        name: pendingAccount.name || pendingAccount.email || parentId,
         role: accountRole
       });
 
-      if (approvedAccount?.email) {
+      await batch.commit();
+
+      if (accountRole === 'parent') {
+        setAvailableStudents((students) => [...students, { id: approvedChildId, name: pendingAccount.requestedChildName.trim() }]);
+      }
+
+      if (pendingAccount.email) {
         try {
           await queueEmailNotification({
             type: accountRole === 'teacher' ? 'teacher-approved' : 'parent-approved',
@@ -900,25 +930,23 @@ function App() {
     }
   };
 
-  const createStudentFromRequest = async (parent: { id: string; name: string; requestedChildName: string }) => {
-    const studentName = parent.requestedChildName.trim();
-    if (!user || role !== 'admin' || !studentName) return;
+  const createStudentForApprovedParent = async (parentId: string) => {
+    if (!user || role !== 'admin') return;
+    const parent = approvedParents.find((item) => item.id === parentId);
+    if (!parent || parent.childNames.length > 0) return;
+    const studentName = (approvedParentStudentNames[parentId] || '').trim();
+    if (!studentName) { setApprovalMessage(t.enterChildName); return; }
     try {
-      const studentReference = await addDoc(collection(db, 'students'), {
-        name: studentName,
-        parentIds: [parent.id],
-        groupMemberships: [],
-        groupIds: [],
-        createdAt: new Date().toISOString()
-      });
+      const studentReference = doc(collection(db, 'students'));
+      const batch = writeBatch(db);
+      batch.set(studentReference, { name: studentName, parentIds: [parentId], groupMemberships: [], groupIds: [], createdByParentId: parentId, createdAt: new Date().toISOString() });
+      batch.update(doc(db, 'users', parentId), { linkedChildIds: arrayUnion(studentReference.id) });
+      await batch.commit();
       setAvailableStudents((students) => [...students, { id: studentReference.id, name: studentName }]);
-      setPendingParents((parents) => parents.map((item) => item.id === parent.id ? { ...item, childId: studentReference.id } : item));
-      setApprovalMessage(t.studentCreated);
-    } catch {
-      setApprovalMessage(t.approvalError);
-    }
+      setApprovedParents((parents) => parents.map((item) => item.id === parentId ? { ...item, childNames: [...item.childNames, studentName] } : item));
+      setApprovalMessage(t.studentLinked);
+    } catch { setApprovalMessage(t.approvalError); }
   };
-
   const createStudent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!user || role !== 'admin' || !newStudentName.trim()) return;
@@ -933,9 +961,6 @@ function App() {
         createdAt: new Date().toISOString()
       });
       setAvailableStudents((students) => [...students, { id: studentReference.id, name: newStudentName.trim() }]);
-      if (matchingParents.length > 0) {
-        setPendingParents((parents) => parents.map((parent) => matchingParents.some((match) => match.id === parent.id) ? { ...parent, childId: studentReference.id } : parent));
-      }
       setNewStudentName('');
       setGroupMessage(t.studentCreated);
     } catch {
@@ -1646,14 +1671,26 @@ function App() {
                   {pendingParents.map((parent) => (
                     <li key={parent.id}>
                       <span><strong>{parent.name} · {t[parent.role]}</strong><small>{parent.email}</small>{parent.requestedChildName && <small>{t.requestedChild}: {parent.requestedChildName}</small>}</span>
-                      <span className="approval-controls">
-                        {parent.role === 'parent' && <><select aria-label={t.studentName} value={parent.childId} onChange={(event) => setPendingParents((parents) => parents.map((item) => item.id === parent.id ? { ...item, childId: event.target.value } : item))} required><option value="">{t.studentName}</option>{availableStudents.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}</select>{parent.requestedChildName && !availableStudents.some((student) => student.name.toLowerCase() === parent.requestedChildName.toLowerCase()) && <button className="secondary-action small-action" type="button" onClick={() => createStudentFromRequest(parent)}>{t.createStudent}</button>}</>}
-                        <button className="primary-action small-action" type="button" onClick={() => approveParent(parent.id, parent.role, parent.childId)}>{t.approve}</button>
-                      </span>
+                      <span className="approval-controls"><button className="primary-action small-action" type="button" onClick={() => approveParent(parent.id, parent.role)}>{t.approve}</button></span>
                     </li>
                   ))}
                 </ul>
               )}
+              <div className="approved-parent-section">
+                <div className="detail-card-heading"><div><span className="eyebrow">{t.admin}</span><h4>{t.approvedParents}</h4></div><span className="count-badge">{approvedParents.length}</span></div>
+                {approvedParents.length === 0 ? <p className="muted">No approved parent accounts.</p> : (
+                  <div className="approval-table-wrap"><table className="approval-table"><thead><tr><th>{t.parentName}</th><th>{t.childName}</th><th></th></tr></thead><tbody>
+                    {approvedParents.map((parent) => {
+                      const hasStudent = parent.childNames.length > 0;
+                      return <tr key={parent.id}>
+                        <td><strong>{parent.name}</strong><small>{parent.email}</small></td>
+                        <td>{hasStudent ? parent.childNames.join(', ') : <span className="muted">{t.noStudent}</span>}</td>
+                        <td>{!hasStudent && <div className="approval-parent-create"><input value={approvedParentStudentNames[parent.id] || ''} onChange={(event) => setApprovedParentStudentNames((current) => ({ ...current, [parent.id]: event.target.value }))} placeholder={t.enterChildName} aria-label={t.enterChildName} /><button className="secondary-action small-action" type="button" onClick={() => void createStudentForApprovedParent(parent.id)}>{t.createStudentForParent}</button></div>}</td>
+                      </tr>;
+                    })}
+                  </tbody></table></div>
+                )}
+              </div>
             </article>
           )}
 
