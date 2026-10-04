@@ -355,7 +355,7 @@ function App() {
   const [consentPolicy, setConsentPolicy] = useState(false);
   const [profileStatus, setProfileStatus] = useState<'pending' | 'active' | null>(null);
   const [profileName, setProfileName] = useState('');
-  const [pendingParents, setPendingParents] = useState<Array<{ id: string; email: string; name: string; role: Role; childId: string; requestedChildName: string; language: Locale }>>([]);
+  const [pendingParents, setPendingParents] = useState<Array<{ id: string; email: string; name: string; role: Role; requestedChildName: string; language: Locale }>>([]);
   const [approvalMessage, setApprovalMessage] = useState('');
   const [linkedChildIds, setLinkedChildIds] = useState<string[]>([]);
   const [selectedChildId, setSelectedChildId] = useState('');
@@ -627,7 +627,6 @@ function App() {
             email: pendingDoc.data().email || '',
             name: pendingDoc.data().name || pendingDoc.data().email || 'Parent',
             role: pendingDoc.data().role || 'parent',
-            childId: '',
             requestedChildName: pendingDoc.data().requestedChildName || '',
             language: (pendingDoc.data().language || 'en') as Locale
           })));
@@ -940,9 +939,6 @@ function App() {
         createdAt: new Date().toISOString()
       });
       setAvailableStudents((students) => [...students, { id: studentReference.id, name: newStudentName.trim() }]);
-      if (matchingParents.length > 0) {
-        setPendingParents((parents) => parents.map((parent) => matchingParents.some((match) => match.id === parent.id) ? { ...parent, childId: studentReference.id } : parent));
-      }
       setNewStudentName('');
       setGroupMessage(t.studentCreated);
     } catch {
