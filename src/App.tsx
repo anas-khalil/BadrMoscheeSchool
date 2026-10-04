@@ -930,6 +930,23 @@ function App() {
     }
   };
 
+  const createStudentForApprovedParent = async (parentId: string) => {
+    if (!user || role !== 'admin') return;
+    const parent = approvedParents.find((item) => item.id === parentId);
+    if (!parent || parent.childNames.length > 0) return;
+    const studentName = (approvedParentStudentNames[parentId] || '').trim();
+    if (!studentName) { setApprovalMessage(t.enterChildName); return; }
+    try {
+      const studentReference = doc(collection(db, 'students'));
+      const batch = writeBatch(db);
+      batch.set(studentReference, { name: studentName, parentIds: [parentId], groupMemberships: [], groupIds: [], createdByParentId: parentId, createdAt: new Date().toISOString() });
+      batch.update(doc(db, 'users', parentId), { linkedChildIds: arrayUnion(studentReference.id) });
+      await batch.commit();
+      setAvailableStudents((students) => [...students, { id: studentReference.id, name: studentName }]);
+      setApprovedParents((parents) => parents.map((item) => item.id === parentId ? { ...item, childNames: [...item.childNames, studentName] } : item));
+      setApprovalMessage(t.studentLinked);
+    } catch { setApprovalMessage(t.approvalError); }
+  };
   const createStudent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!user || role !== 'admin' || !newStudentName.trim()) return;
@@ -1654,13 +1671,26 @@ function App() {
                   {pendingParents.map((parent) => (
                     <li key={parent.id}>
                       <span><strong>{parent.name} · {t[parent.role]}</strong><small>{parent.email}</small>{parent.requestedChildName && <small>{t.requestedChild}: {parent.requestedChildName}</small>}</span>
-                      <span className="approval-controls">
-                        <button className="primary-action small-action" type="button" onClick={() => approveParent(parent.id, parent.role)}>{t.approve}</button>
-                      </span>
+                      <span className="approval-controls"><button className="primary-action small-action" type="button" onClick={() => approveParent(parent.id, parent.role)}>{t.approve}</button></span>
                     </li>
                   ))}
                 </ul>
               )}
+              <div className="approved-parent-section">
+                <div className="detail-card-heading"><div><span className="eyebrow">{t.admin}</span><h4>{t.approvedParents}</h4></div><span className="count-badge">{approvedParents.length}</span></div>
+                {approvedParents.length === 0 ? <p className="muted">No approved parent accounts.</p> : (
+                  <div className="approval-table-wrap"><table className="approval-table"><thead><tr><th>{t.parentName}</th><th>{t.childName}</th><th></th></tr></thead><tbody>
+                    {approvedParents.map((parent) => {
+                      const hasStudent = parent.childNames.length > 0;
+                      return <tr key={parent.id}>
+                        <td><strong>{parent.name}</strong><small>{parent.email}</small></td>
+                        <td>{hasStudent ? parent.childNames.join(', ') : <span className="muted">{t.noStudent}</span>}</td>
+                        <td>{!hasStudent && <div className="approval-parent-create"><input value={approvedParentStudentNames[parent.id] || ''} onChange={(event) => setApprovedParentStudentNames((current) => ({ ...current, [parent.id]: event.target.value }))} placeholder={t.enterChildName} aria-label={t.enterChildName} /><button className="secondary-action small-action" type="button" onClick={() => void createStudentForApprovedParent(parent.id)}>{t.createStudentForParent}</button></div>}</td>
+                      </tr>;
+                    })}
+                  </tbody></table></div>
+                )}
+              </div>
             </article>
           )}
 
