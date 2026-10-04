@@ -1364,3 +1364,64 @@ a { color: var(--brass-600); }
 .schedule-editor-cells textarea { min-height:110px; font-size:.86rem; line-height:1.45; }
 @media(max-width:759px){.schedule-table{min-width:880px;font-size:.78rem}.schedule-table th,.schedule-table td{padding:9px 8px}.schedule-editor-meta,.schedule-editor-cells{grid-template-columns:1fr}.schedule-editor-row{padding:12px}}
 @media(min-width:760px){.schedule-table{font-size:.86rem}}
+
+.approved-parent-section {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--line);
+}
+
+.approval-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: var(--space-4);
+}
+
+.approval-table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.approval-table th,
+.approval-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: start;
+  vertical-align: middle;
+}
+
+.approval-table th {
+  background: var(--paper-100);
+  color: var(--ink-600);
+  font-size: .82rem;
+}
+
+.approval-table td small {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-400);
+}
+
+.approval-parent-create {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.approval-parent-create input {
+  width: min(220px, 100%);
+  min-width: 160px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 9px 10px;
+  min-height: 40px;
+  background: var(--paper-0);
+}
+
+@media (max-width: 759px) {
+  .approval-table {
+    min-width: 680px;
+  }
+}
