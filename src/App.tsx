@@ -428,7 +428,7 @@ function App() {
       setScheduleMessage(translations[locale].scheduleLoadError);
     });
     return () => unsubscribe();
-  }, [profileStatus, t, user]);
+  }, [locale, profileStatus, user]);
 
   useEffect(() => {
     if (!user || profileStatus !== 'active') return;
