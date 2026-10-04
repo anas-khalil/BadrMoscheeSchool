@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { createUserWithEmailAndPassword, deleteUser, getAuth, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, type User } from 'firebase/auth';
-import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, onSnapshot, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { addDoc, arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, onSnapshot, query, setDoc, updateDoc, where, writeBatch } from 'firebase/firestore';
 import { registerSW } from 'virtual:pwa-register';
 import { queueEmailNotification } from './emailNotifications';
 
@@ -859,27 +859,53 @@ function App() {
     } catch { setScheduleMessage(t.approvalError); }
   };
 
-  const approveParent = async (parentId: string, accountRole: Role, childId: string) => {
+  const approveParent = async (parentId: string, accountRole: Role) => {
+    const pendingAccount = pendingParents.find((parent) => parent.id === parentId);
+    if (!pendingAccount) return;
+
     try {
-      if (accountRole === 'parent' && childId.trim()) {
-        await updateDoc(doc(db, 'students', childId.trim()), { parentIds: arrayUnion(parentId) });
+      const batch = writeBatch(db);
+      let approvedChildId = '';
+
+      if (accountRole === 'parent') {
+        const studentName = pendingAccount.requestedChildName.trim();
+        if (!studentName) {
+          setApprovalMessage(t.approvalError);
+          return;
+        }
+
+        const studentReference = doc(collection(db, 'students'));
+        approvedChildId = studentReference.id;
+        batch.set(studentReference, {
+          name: studentName,
+          parentIds: [parentId],
+          groupMemberships: [],
+          groupIds: [],
+          createdAt: new Date().toISOString()
+        });
       }
-      await updateDoc(doc(db, 'users', parentId), {
+
+      batch.update(doc(db, 'users', parentId), {
         status: 'active',
-        ...(accountRole === 'parent' ? { linkedChildIds: childId.trim() ? [childId.trim()] : [] } : {})
+        ...(accountRole === 'parent' ? { linkedChildIds: [approvedChildId] } : {})
       });
+
       // Mirror the minimal, non-sensitive fields into the public `directory`
       // collection so this account shows up in every other role's message
       // recipient dropdown (see firestore.rules: users/{uid} stays
       // owner/admin-only, directory/{uid} is readable by any signed-in user).
-      const approvedParent = pendingParents.find((parent) => parent.id === parentId);
-      const approvedAccount = pendingParents.find((parent) => parent.id === parentId);
-      await setDoc(doc(db, 'directory', parentId), {
-        name: approvedParent?.name || approvedParent?.email || parentId,
+      batch.set(doc(db, 'directory', parentId), {
+        name: pendingAccount.name || pendingAccount.email || parentId,
         role: accountRole
       });
 
-      if (approvedAccount?.email) {
+      await batch.commit();
+
+      if (accountRole === 'parent') {
+        setAvailableStudents((students) => [...students, { id: approvedChildId, name: pendingAccount.requestedChildName.trim() }]);
+      }
+
+      if (pendingAccount.email) {
         try {
           await queueEmailNotification({
             type: accountRole === 'teacher' ? 'teacher-approved' : 'parent-approved',
@@ -895,25 +921,6 @@ function App() {
 
       setPendingParents((parents) => parents.filter((parent) => parent.id !== parentId));
       setApprovalMessage(t.approved);
-    } catch {
-      setApprovalMessage(t.approvalError);
-    }
-  };
-
-  const createStudentFromRequest = async (parent: { id: string; name: string; requestedChildName: string }) => {
-    const studentName = parent.requestedChildName.trim();
-    if (!user || role !== 'admin' || !studentName) return;
-    try {
-      const studentReference = await addDoc(collection(db, 'students'), {
-        name: studentName,
-        parentIds: [parent.id],
-        groupMemberships: [],
-        groupIds: [],
-        createdAt: new Date().toISOString()
-      });
-      setAvailableStudents((students) => [...students, { id: studentReference.id, name: studentName }]);
-      setPendingParents((parents) => parents.map((item) => item.id === parent.id ? { ...item, childId: studentReference.id } : item));
-      setApprovalMessage(t.studentCreated);
     } catch {
       setApprovalMessage(t.approvalError);
     }
@@ -1647,8 +1654,7 @@ function App() {
                     <li key={parent.id}>
                       <span><strong>{parent.name} · {t[parent.role]}</strong><small>{parent.email}</small>{parent.requestedChildName && <small>{t.requestedChild}: {parent.requestedChildName}</small>}</span>
                       <span className="approval-controls">
-                        {parent.role === 'parent' && <><select aria-label={t.studentName} value={parent.childId} onChange={(event) => setPendingParents((parents) => parents.map((item) => item.id === parent.id ? { ...item, childId: event.target.value } : item))} required><option value="">{t.studentName}</option>{availableStudents.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}</select>{parent.requestedChildName && !availableStudents.some((student) => student.name.toLowerCase() === parent.requestedChildName.toLowerCase()) && <button className="secondary-action small-action" type="button" onClick={() => createStudentFromRequest(parent)}>{t.createStudent}</button>}</>}
-                        <button className="primary-action small-action" type="button" onClick={() => approveParent(parent.id, parent.role, parent.childId)}>{t.approve}</button>
+                        <button className="primary-action small-action" type="button" onClick={() => approveParent(parent.id, parent.role)}>{t.approve}</button>
                       </span>
                     </li>
                   ))}
