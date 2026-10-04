@@ -425,7 +425,7 @@ function App() {
       setClassSchedule(snapshot.exists() ? normalizeClassScheduleRows(snapshot.data().rows) : DEFAULT_CLASS_SCHEDULE);
     }, () => {
       setClassSchedule(DEFAULT_CLASS_SCHEDULE);
-      setScheduleMessage(t.scheduleLoadError);
+      setScheduleMessage(translations[locale].scheduleLoadError);
     });
     return () => unsubscribe();
   }, [profileStatus, t, user]);
