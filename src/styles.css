@@ -1425,3 +1425,12 @@ a { color: var(--brass-600); }
     min-width: 680px;
   }
 }
+
+
+/* Admin: manage the students linked to each approved parent */
+.approval-parent-children { display:grid; gap:var(--space-3); min-width:280px; }
+.approval-parent-child { display:grid; grid-template-columns:minmax(120px,1fr) auto auto; align-items:center; gap:var(--space-2); }
+.approval-parent-child input { width:100%; min-width:0; border:1px solid var(--line-strong); border-radius:var(--radius-sm); padding:9px 10px; min-height:40px; background:var(--paper-0); }
+.danger-action { border:1px solid #b53a32; border-radius:var(--radius-sm); background:var(--paper-0); color:#9f2f29; cursor:pointer; font-weight:700; padding:9px 12px; min-height:40px; white-space:nowrap; }
+.danger-action:hover { background:#fff0ee; }
+@media(max-width:759px){.approval-parent-child{grid-template-columns:minmax(0,1fr) minmax(0,auto);}.approval-parent-child input{grid-column:1/-1}.approval-parent-children{min-width:260px}}
