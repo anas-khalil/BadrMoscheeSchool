@@ -652,7 +652,7 @@ function App() {
           }).sort((a, b) => a.name.localeCompare(b.name));
           setApprovedParents(approvedParentRows);
           setApprovedParentStudentNames(Object.fromEntries(approvedParentRows.map((parent) => [parent.id, parent.requestedChildName])));
-          setApprovedParentChildNames(Object.fromEntries(approvedParentRows.flatMap((parent) => parent.children.map((child) => [child.id, child.name]))));
+          setApprovedParentChildNames(Object.fromEntries(approvedParentRows.flatMap((parent) => parent.children.map((child) => [child.id, child.name] as const))));
         }
       }).catch(() => setProfileStatus('pending'));
     });
