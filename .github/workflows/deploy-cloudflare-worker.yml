@@ -1,0 +1,55 @@
+name: Deploy Cloudflare Worker
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "cloudflare/email-notifications/**"
+      - ".github/workflows/deploy-cloudflare-worker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-email-notifications
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Ensure private R2 bucket and deploy Worker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ensure EU R2 bucket exists
+        working-directory: cloudflare/email-notifications
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BUCKET_NAME="badr-school-assignment-files"
+
+          if npx --yes wrangler@4 r2 bucket create "$BUCKET_NAME" --jurisdiction eu --location weur; then
+            echo "Created R2 bucket $BUCKET_NAME in the EU jurisdiction."
+          else
+            echo "Bucket creation did not succeed; verifying that the bucket already exists in the EU jurisdiction."
+            npx --yes wrangler@4 r2 bucket info "$BUCKET_NAME" --jurisdiction eu --json
+          fi
+
+      - name: Deploy Worker
+        working-directory: cloudflare/email-notifications
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4 deploy
