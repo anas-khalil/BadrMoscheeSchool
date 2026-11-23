@@ -70,6 +70,9 @@ type DirectoryGroup = {
   studentIds: string[];
 };
 
+type AssignmentAttachment = { id: string; name: string; size: number; contentType: string; uploadedAt?: string };
+type AssignmentRecord = { id: string; groupId: string; teacherId: string; descriptionAr?: string; descriptionDe?: string; description?: string; dueDate?: string; createdAt?: string; attachments: AssignmentAttachment[] };
+
 type AttendanceStudent = DirectoryStudent & {
   status?: 'present' | 'absent' | 'late';
 };
@@ -180,7 +183,7 @@ const translations: Record<Locale, Record<string, string>> = {
     switchToLogin: 'Already registered? Sign in',
     authError: 'Unable to complete authentication. Check your details and try again.', forgotPassword: 'Forgot password?', passwordResetSent: 'Password reset email sent.',
     pendingNote: 'Your account is pending admin approval.'
-    ,approvals: 'Approvals', groups: 'Groups', pendingParents: 'Pending parent accounts', approve: 'Approve', approved: 'Parent approved', approvalError: 'Could not update this account.', approvalEmailFailed: 'The account was approved, but the email notification could not be sent.', eventTitle: 'Event title', eventDate: 'Event date', eventAudience: 'Audience', allSchool: 'Everyone', createEvent: 'Create event', eventCreated: 'Event created.', group: 'Group', studentId: 'Student ID', studentName: 'Student name', assignmentTitle: 'Assignment title', description: 'Description', dueDate: 'Due date', createAssignment: 'Post assignment', assignmentCreated: 'Assignment posted', attendanceStatus: 'Status', present: 'Present', absent: 'Absent', late: 'Late', saveAttendance: 'Save attendance', attendanceSaved: 'Attendance saved', loginButton: 'Login', signupButton: 'Sign up', chooseAccountType: 'Choose account type', accountType: 'Account type', signupNote: 'All new accounts require admin approval.', accountCreated: 'Account created. Please wait for admin approval.', groupId: 'Group ID', subject: 'Subject', level: 'Level', teacherUid: 'Teacher UID', studentIds: 'Students', schedule: 'Weekly schedule', createGroup: 'Create group', groupCreated: 'Group created and assigned.', attended: 'Attended', markAttendance: 'Mark attendance', attendanceDate: 'Session date', attendanceSummary: 'Attendance summary', attendanceRate: 'Attendance rate', viewHistory: 'View student history', history: 'History', noAttendanceData: 'No attendance data yet.', saturdayOnly: 'Please choose a Saturday.', messageText: 'Message', sendMessage: 'Send message', noRecords: 'No records yet.', existingGroups: 'Existing groups', noGroups: 'No groups created yet.', edit: 'Edit', deleteAction: 'Delete', updateGroup: 'Update group', groupUpdated: 'Group updated.', groupDeleted: 'Group deleted.', cancelEdit: 'Cancel edit', confirmDeleteGroup: 'Delete this group? This cannot be undone.', sentOn: 'Sent', inbox: 'Inbox', sent: 'Sent', back: 'Back'
+    ,approvals: 'Approvals', groups: 'Groups', pendingParents: 'Pending parent accounts', approve: 'Approve', approved: 'Parent approved', approvalError: 'Could not update this account.', approvalEmailFailed: 'The account was approved, but the email notification could not be sent.', eventTitle: 'Event title', eventDate: 'Event date', eventAudience: 'Audience', allSchool: 'Everyone', createEvent: 'Create event', eventCreated: 'Event created.', group: 'Group', studentId: 'Student ID', studentName: 'Student name', assignmentTitle: 'Assignment title', assignmentDescriptionArabic: 'Assignment description in Arabic', assignmentDescriptionGerman: 'Assignment description in German', attachments: 'Attachments', addAttachments: 'Add attachments (max. 5 files, 10 MB each)', downloadAttachment: 'Download', removeAttachment: 'Remove attachment', deleteAssignment: 'Delete assignment', confirmDeleteAssignment: 'Delete this assignment and all its uploaded files?', attachmentLimit: 'Choose up to 5 files, each no larger than 10 MB.', attachmentUploadFailed: 'The assignment was created, but one or more attachments could not be uploaded.', dueDate: 'Due date', createAssignment: 'Post assignment', assignmentCreated: 'Assignment posted', attendanceStatus: 'Status', present: 'Present', absent: 'Absent', late: 'Late', saveAttendance: 'Save attendance', attendanceSaved: 'Attendance saved', loginButton: 'Login', signupButton: 'Sign up', chooseAccountType: 'Choose account type', accountType: 'Account type', signupNote: 'All new accounts require admin approval.', accountCreated: 'Account created. Please wait for admin approval.', groupId: 'Group ID', subject: 'Subject', level: 'Level', teacherUid: 'Teacher UID', studentIds: 'Students', schedule: 'Weekly schedule', createGroup: 'Create group', groupCreated: 'Group created and assigned.', attended: 'Attended', markAttendance: 'Mark attendance', attendanceDate: 'Session date', attendanceSummary: 'Attendance summary', attendanceRate: 'Attendance rate', viewHistory: 'View student history', history: 'History', noAttendanceData: 'No attendance data yet.', saturdayOnly: 'Please choose a Saturday.', messageText: 'Message', sendMessage: 'Send message', noRecords: 'No records yet.', existingGroups: 'Existing groups', noGroups: 'No groups created yet.', edit: 'Edit', deleteAction: 'Delete', updateGroup: 'Update group', groupUpdated: 'Group updated.', groupDeleted: 'Group deleted.', cancelEdit: 'Cancel edit', confirmDeleteGroup: 'Delete this group? This cannot be undone.', sentOn: 'Sent', inbox: 'Inbox', sent: 'Sent', back: 'Back'
     ,createStudent: 'Create student record', studentCreated: 'Student created', requestedChild: 'Requested child', approvedParents: 'Approved parent accounts', parentName: 'Parent', noStudent: 'No student record', createStudentForParent: 'Create student', enterChildName: 'Enter child name', studentLinked: 'Student record created and linked.', name: 'Full name', students: 'Students', teachers: 'Teachers', unreadMessages: 'Unread messages', unreadAssignments: 'Unread assignments', recipientType: 'Send to', everyone: 'Everyone', groupRecipient: 'Group', teacherRecipient: 'Teacher', parentRecipient: 'Parent', individualRecipient: 'Individual parent', recipient: 'Recipient', selectRecipient: 'Select recipient', messageSent: 'Message sent.',
 
     classSchedule: 'Class schedule', scheduleMenRoom: "Men's prayer room", scheduleKitchen: 'Kitchen', scheduleWomenRoom: "Women's prayer room", scheduleOffice: 'Office', scheduleDuration: 'Duration', scheduleFrom: 'From', scheduleTo: 'To', scheduleBreak: 'Break', scheduleBreakLabel: 'Break label', scheduleEdit: 'Edit class schedule', scheduleSave: 'Save schedule', scheduleCancel: 'Cancel', scheduleAddRow: 'Add time slot', scheduleDeleteRow: 'Delete row', scheduleSaved: 'Class schedule saved.', scheduleLoadError: 'Could not load the class schedule.', manageChildren: 'Manage children', addChild: 'Add child', editChild: 'Edit child', childName: 'Child name', saveChild: 'Save child', childAdded: 'Child added.', childUpdated: 'Child updated.', studentNameUpdated: 'Student name updated.', studentRemoved: 'Student removed from this parent account.', addStudentForParent: 'Add student', saveChildName: 'Save name', removeStudent: 'Remove', confirmRemoveStudent: 'Remove this student from the parent account? If no other parent is linked, the student record will be deleted and the student will be removed from groups.', additionalChildrenNote: 'After your account is activated, you can add additional children from your dashboard.', placementFormNotice: 'IMPORTANT: Before continuing with registration, please complete the child level assessment form for Arabic and Quran. This form helps us determine the appropriate level for your child. The form must be completed before you can finish registration.', placementFormLink: 'Open the Arabic & Quran Level Assessment Form', selectChild: 'Select child',
@@ -198,13 +201,13 @@ const translations: Record<Locale, Record<string, string>> = {
     ,privacyLegalBasis: 'Legal Basis (GDPR)'
     ,privacyLegalText: 'Processing is based on the explicit consent of the parent or legal guardian (GDPR Art. 6(1)(a) and Art. 8). Consent is provided at registration and may be withdrawn at any time without consequences.'
     ,privacyStorage: 'Data Storage'
-    ,privacyStorageText: 'All data is stored in Google Firebase Firestore with the data centre located in Frankfurt, Germany (europe-west3 region). Data does not leave the European Union.'
+    ,privacyStorageText: 'School records are stored in Google Firebase Firestore in Frankfurt, Germany (europe-west3). Assignment files are stored in a private Cloudflare R2 bucket configured for the EU jurisdiction. Data is configured to remain in the European Union.'
     ,privacyRetention: 'Data Retention'
     ,privacyRetentionText: "Personal data is retained for the duration of the child's enrolment plus a maximum of 6 months after leaving the school. Upon request, data will be permanently deleted."
     ,privacyRights: 'Your Rights (GDPR Art. 15–20)'
     ,privacyRightsText: "You have the right to access, correct, delete, or export your data at any time. You may also withdraw consent without affecting your child's continued participation. Contact the school administration via the Messages section to exercise these rights."
     ,privacyThirdParty: 'Third Parties'
-    ,privacyThirdPartyText: 'We use Google Firebase as our technical infrastructure provider (data processor). No data is sold, shared with advertisers, or disclosed to any third party. Google operates under a GDPR-compliant Data Processing Agreement with standard contractual clauses.'
+    ,privacyThirdPartyText: 'We use Google Firebase and Cloudflare as technical infrastructure providers (data processors) for school records and private assignment files. No data is sold or shared with advertisers. Their applicable data-processing terms govern this processing.'
     ,privacyComplaint: 'Right to Lodge a Complaint'
     ,privacyComplaintText: 'You have the right to complain to the Hessian Data Protection Authority (Hessischer Beauftragter für Datenschutz und Informationsfreiheit — HBDI): www.datenschutz.hessen.de · Gustav-Stresemann-Ring 1, 65189 Wiesbaden.'
     ,privacyLastUpdated: 'Last updated: September 2026'
@@ -242,7 +245,7 @@ const translations: Record<Locale, Record<string, string>> = {
     switchToLogin: 'Bereits registriert? Anmelden',
     authError: 'Anmeldung nicht möglich. Bitte Daten prüfen und erneut versuchen.', forgotPassword: 'Passwort vergessen?', passwordResetSent: 'E-Mail zum Zurücksetzen des Passworts wurde gesendet.',
     pendingNote: 'Ihr Konto wartet auf die Genehmigung durch die Verwaltung.'
-    ,approvals: 'Genehmigungen', groups: 'Gruppen', pendingParents: 'Ausstehende Elternkonten', approve: 'Genehmigen', approved: 'Elternkonto genehmigt', approvalError: 'Konto konnte nicht aktualisiert werden.', approvalEmailFailed: 'Das Konto wurde genehmigt, aber die E-Mail-Benachrichtigung konnte nicht gesendet werden.', eventTitle: 'Veranstaltungstitel', eventDate: 'Veranstaltungsdatum', eventAudience: 'Zielgruppe', allSchool: 'Alle', createEvent: 'Veranstaltung erstellen', eventCreated: 'Veranstaltung erstellt.', group: 'Gruppe', studentId: 'Schüler-ID', studentName: 'Name des Schülers', assignmentTitle: 'Aufgabentitel', description: 'Beschreibung', dueDate: 'Fälligkeitsdatum', createAssignment: 'Aufgabe veröffentlichen', assignmentCreated: 'Aufgabe veröffentlicht', attendanceStatus: 'Status', present: 'Anwesend', absent: 'Abwesend', late: 'Verspätet', saveAttendance: 'Anwesenheit speichern', attendanceSaved: 'Anwesenheit gespeichert', loginButton: 'Anmelden', signupButton: 'Registrieren', chooseAccountType: 'Kontotyp auswählen', accountType: 'Kontotyp', signupNote: 'Alle neuen Konten benötigen eine Genehmigung.', accountCreated: 'Konto erstellt. Bitte warten Sie auf die Genehmigung.', groupId: 'Gruppen-ID', subject: 'Fach', level: 'Stufe', teacherUid: 'Lehrer-UID', studentIds: 'Schüler', schedule: 'Wochenplan', createGroup: 'Gruppe erstellen', groupCreated: 'Gruppe erstellt und zugewiesen.', attended: 'Anwesend', markAttendance: 'Anwesenheit erfassen', attendanceDate: 'Unterrichtsdatum', attendanceSummary: 'Anwesenheitsübersicht', attendanceRate: 'Anwesenheitsquote', viewHistory: 'Schülerverlauf anzeigen', history: 'Verlauf', noAttendanceData: 'Noch keine Anwesenheitsdaten.', saturdayOnly: 'Bitte wählen Sie einen Samstag.'
+    ,approvals: 'Genehmigungen', groups: 'Gruppen', pendingParents: 'Ausstehende Elternkonten', approve: 'Genehmigen', approved: 'Elternkonto genehmigt', approvalError: 'Konto konnte nicht aktualisiert werden.', approvalEmailFailed: 'Das Konto wurde genehmigt, aber die E-Mail-Benachrichtigung konnte nicht gesendet werden.', eventTitle: 'Veranstaltungstitel', eventDate: 'Veranstaltungsdatum', eventAudience: 'Zielgruppe', allSchool: 'Alle', createEvent: 'Veranstaltung erstellen', eventCreated: 'Veranstaltung erstellt.', group: 'Gruppe', studentId: 'Schüler-ID', studentName: 'Name des Schülers', assignmentTitle: 'Aufgabentitel', assignmentDescriptionArabic: 'Aufgabenbeschreibung auf Arabisch', assignmentDescriptionGerman: 'Aufgabenbeschreibung auf Deutsch', attachments: 'Anhänge', addAttachments: 'Dateien hinzufügen (max. 5 Dateien, je 10 MB)', downloadAttachment: 'Herunterladen', removeAttachment: 'Anhang entfernen', deleteAssignment: 'Aufgabe löschen', confirmDeleteAssignment: 'Diese Aufgabe und alle hochgeladenen Dateien löschen?', attachmentLimit: 'Bitte höchstens 5 Dateien mit jeweils maximal 10 MB auswählen.', attachmentUploadFailed: 'Die Aufgabe wurde erstellt, aber mindestens ein Anhang konnte nicht hochgeladen werden.', dueDate: 'Fälligkeitsdatum', createAssignment: 'Aufgabe veröffentlichen', assignmentCreated: 'Aufgabe veröffentlicht', attendanceStatus: 'Status', present: 'Anwesend', absent: 'Abwesend', late: 'Verspätet', saveAttendance: 'Anwesenheit speichern', attendanceSaved: 'Anwesenheit gespeichert', loginButton: 'Anmelden', signupButton: 'Registrieren', chooseAccountType: 'Kontotyp auswählen', accountType: 'Kontotyp', signupNote: 'Alle neuen Konten benötigen eine Genehmigung.', accountCreated: 'Konto erstellt. Bitte warten Sie auf die Genehmigung.', groupId: 'Gruppen-ID', subject: 'Fach', level: 'Stufe', teacherUid: 'Lehrer-UID', studentIds: 'Schüler', schedule: 'Wochenplan', createGroup: 'Gruppe erstellen', groupCreated: 'Gruppe erstellt und zugewiesen.', attended: 'Anwesend', markAttendance: 'Anwesenheit erfassen', attendanceDate: 'Unterrichtsdatum', attendanceSummary: 'Anwesenheitsübersicht', attendanceRate: 'Anwesenheitsquote', viewHistory: 'Schülerverlauf anzeigen', history: 'Verlauf', noAttendanceData: 'Noch keine Anwesenheitsdaten.', saturdayOnly: 'Bitte wählen Sie einen Samstag.'
     ,createStudent: 'Schülerdatensatz erstellen', studentCreated: 'Schüler erstellt', approvedParents: 'Genehmigte Elternkonten', parentName: 'Elternteil', noStudent: 'Kein Schülerdatensatz', createStudentForParent: 'Schüler erstellen', enterChildName: 'Name des Kindes eingeben', studentLinked: 'Schülerdatensatz erstellt und verknüpft.', requestedChild: 'Angefragtes Kind', name: 'Vollständiger Name', students: 'Schüler', teachers: 'Lehrer', unreadMessages: 'Ungelesene Nachrichten', unreadAssignments: 'Ungelesene Aufgaben', recipientType: 'Senden an', everyone: 'Alle', groupRecipient: 'Gruppe', teacherRecipient: 'Lehrer', parentRecipient: 'Elternteil', individualRecipient: 'Einzelnen Elternteil', recipient: 'Empfänger', selectRecipient: 'Empfänger auswählen', messageSent: 'Nachricht gesendet.', sendMessage: 'Nachricht senden', noRecords: 'Noch keine Einträge.', existingGroups: 'Bestehende Gruppen', noGroups: 'Noch keine Gruppen erstellt.', edit: 'Bearbeiten', deleteAction: 'Löschen', updateGroup: 'Gruppe aktualisieren', groupUpdated: 'Gruppe aktualisiert.', groupDeleted: 'Gruppe gelöscht.', cancelEdit: 'Bearbeitung abbrechen', confirmDeleteGroup: 'Diese Gruppe löschen? Dies kann nicht rückgängig gemacht werden.', sentOn: 'Gesendet', inbox: 'Posteingang', sent: 'Gesendet', back: 'Zurück',
 
     classSchedule: 'Stundenplan', scheduleMenRoom: 'Männer-Gebetsraum', scheduleKitchen: 'Küche', scheduleWomenRoom: 'Frauen-Gebetsraum', scheduleOffice: 'Büro', scheduleDuration: 'Dauer', scheduleFrom: 'Von', scheduleTo: 'Bis', scheduleBreak: 'Pause', scheduleBreakLabel: 'Pausenbezeichnung', scheduleEdit: 'Stundenplan bearbeiten', scheduleSave: 'Stundenplan speichern', scheduleCancel: 'Abbrechen', scheduleAddRow: 'Zeitfenster hinzufügen', scheduleDeleteRow: 'Zeile löschen', scheduleSaved: 'Stundenplan gespeichert.', scheduleLoadError: 'Stundenplan konnte nicht geladen werden.', manageChildren: 'Kinder verwalten', addChild: 'Kind hinzufügen', editChild: 'Kind bearbeiten', childName: 'Name des Kindes', saveChild: 'Kind speichern', childAdded: 'Kind hinzugefügt.', childUpdated: 'Kind aktualisiert.', studentNameUpdated: 'Schülername aktualisiert.', studentRemoved: 'Schüler wurde von diesem Elternkonto entfernt.', addStudentForParent: 'Schüler hinzufügen', saveChildName: 'Namen speichern', removeStudent: 'Entfernen', confirmRemoveStudent: 'Diesen Schüler aus dem Elternkonto entfernen? Wenn kein weiterer Elternteil verknüpft ist, wird der Schülerdatensatz gelöscht und der Schüler aus den Gruppen entfernt.', additionalChildrenNote: 'Nach der Aktivierung Ihres Kontos können Sie weitere Kinder über Ihr Dashboard hinzufügen.', placementFormNotice: 'WICHTIG: Bitte füllen Sie vor der Fortsetzung der Registrierung das Einstufungsformular für Ihr Kind in Arabisch und Quran aus. Das Formular hilft uns dabei, das passende Niveau für Ihr Kind zu bestimmen. Das Formular muss vor Abschluss der Registrierung ausgefüllt werden.', placementFormLink: 'Einstufungsformular für Arabisch & Quran öffnen', selectChild: 'Kind auswählen',
@@ -260,13 +263,13 @@ const translations: Record<Locale, Record<string, string>> = {
     ,privacyLegalBasis: 'Rechtsgrundlage (DSGVO)'
     ,privacyLegalText: 'Die Verarbeitung erfolgt auf Grundlage der ausdrücklichen Einwilligung des Elternteils oder Erziehungsberechtigten (DSGVO Art. 6 Abs. 1 lit. a und Art. 8). Die Einwilligung wird bei der Anmeldung erteilt und kann jederzeit ohne Nachteile widerrufen werden.'
     ,privacyStorage: 'Datenspeicherung'
-    ,privacyStorageText: 'Alle Daten werden in Google Firebase Firestore gespeichert. Das Rechenzentrum befindet sich in Frankfurt am Main, Deutschland (Region europe-west3). Die Daten verlassen nicht die Europäische Union.'
+    ,privacyStorageText: 'Schuldaten werden in Google Firebase Firestore in Frankfurt am Main (Region europe-west3) gespeichert. Aufgabedateien werden in einem privaten Cloudflare-R2-Bucket mit EU-Jurisdiktion gespeichert. Die Daten bleiben entsprechend der Konfiguration in der Europäischen Union.'
     ,privacyRetention: 'Aufbewahrungsdauer'
     ,privacyRetentionText: 'Personenbezogene Daten werden für die Dauer der Schulzugehörigkeit des Kindes sowie maximal 6 Monate nach dem Austritt aufbewahrt und anschließend dauerhaft gelöscht.'
     ,privacyRights: 'Ihre Rechte (DSGVO Art. 15–20)'
     ,privacyRightsText: 'Sie haben das Recht auf Auskunft, Berichtigung, Löschung oder Datenübertragbarkeit Ihrer Daten. Sie können Ihre Einwilligung jederzeit widerrufen, ohne dass dies die Schulzugehörigkeit Ihres Kindes beeinträchtigt. Wenden Sie sich dazu an die Schulverwaltung über den Nachrichtenbereich.'
     ,privacyThirdParty: 'Dritte'
-    ,privacyThirdPartyText: 'Wir verwenden Google Firebase als technischen Infrastrukturanbieter (Auftragsverarbeiter). Keine Daten werden verkauft, an Werbetreibende weitergegeben oder an Dritte übermittelt. Google handelt auf Grundlage eines DSGVO-konformen Auftragsverarbeitungsvertrags mit Standardvertragsklauseln.'
+    ,privacyThirdPartyText: 'Wir verwenden Google Firebase und Cloudflare als technische Infrastrukturanbieter (Auftragsverarbeiter) für Schuldaten und private Aufgabedateien. Daten werden nicht verkauft oder an Werbetreibende weitergegeben. Für die Verarbeitung gelten die jeweiligen Auftragsverarbeitungsbedingungen.'
     ,privacyComplaint: 'Beschwerderecht'
     ,privacyComplaintText: 'Sie haben das Recht, eine Beschwerde beim Hessischen Beauftragten für Datenschutz und Informationsfreiheit (HBDI) einzureichen: www.datenschutz.hessen.de · Gustav-Stresemann-Ring 1, 65189 Wiesbaden.'
     ,privacyLastUpdated: 'Zuletzt aktualisiert: September 2026'
@@ -304,7 +307,7 @@ const translations: Record<Locale, Record<string, string>> = {
     switchToLogin: 'لديك حساب؟ سجل الدخول',
     authError: 'تعذر تسجيل الدخول. تحقق من البيانات وحاول مرة أخرى.', forgotPassword: 'نسيت كلمة المرور؟', passwordResetSent: 'تم إرسال رسالة إعادة تعيين كلمة المرور.',
     pendingNote: 'حسابك بانتظار موافقة الإدارة.'
-    ,approvals: 'الموافقات', groups: 'المجموعات', pendingParents: 'حسابات أولياء الأمور المعلقة', approve: 'موافقة', approved: 'تمت الموافقة على الحساب', approvalError: 'تعذر تحديث الحساب.', approvalEmailFailed: 'تمت الموافقة على الحساب، ولكن تعذر إرسال إشعار البريد الإلكتروني.', eventTitle: 'عنوان الفعالية', eventDate: 'تاريخ الفعالية', eventAudience: 'الجمهور', allSchool: 'الجميع', createEvent: 'إنشاء فعالية', eventCreated: 'تم إنشاء الفعالية.', group: 'المجموعة', studentId: 'معرف الطالب', studentName: 'اسم الطالب', assignmentTitle: 'عنوان الواجب', description: 'الوصف', dueDate: 'تاريخ التسليم', createAssignment: 'نشر الواجب', assignmentCreated: 'تم نشر الواجب', attendanceStatus: 'الحالة', present: 'حاضر', absent: 'غائب', late: 'متأخر', saveAttendance: 'حفظ الحضور', attendanceSaved: 'تم حفظ الحضور', loginButton: 'تسجيل الدخول', signupButton: 'إنشاء حساب', chooseAccountType: 'اختر نوع الحساب', accountType: 'نوع الحساب', signupNote: 'تحتاج جميع الحسابات الجديدة إلى موافقة الإدارة.', accountCreated: 'تم إنشاء الحساب. يرجى انتظار موافقة الإدارة.', groupId: 'معرف المجموعة', subject: 'المادة', level: 'المستوى', teacherUid: 'معرف المعلم', studentIds: 'الطلاب', schedule: 'الجدول الأسبوعي', createGroup: 'إنشاء مجموعة', groupCreated: 'تم إنشاء المجموعة وتعيينها.', attended: 'حاضر', markAttendance: 'تسجيل الحضور', attendanceDate: 'تاريخ الحصة', attendanceSummary: 'ملخص الحضور', attendanceRate: 'نسبة الحضور', viewHistory: 'عرض سجل الطالب', history: 'السجل', noAttendanceData: 'لا توجد بيانات حضور بعد.', saturdayOnly: 'يرجى اختيار يوم السبت.'
+    ,approvals: 'الموافقات', groups: 'المجموعات', pendingParents: 'حسابات أولياء الأمور المعلقة', approve: 'موافقة', approved: 'تمت الموافقة على الحساب', approvalError: 'تعذر تحديث الحساب.', approvalEmailFailed: 'تمت الموافقة على الحساب، ولكن تعذر إرسال إشعار البريد الإلكتروني.', eventTitle: 'عنوان الفعالية', eventDate: 'تاريخ الفعالية', eventAudience: 'الجمهور', allSchool: 'الجميع', createEvent: 'إنشاء فعالية', eventCreated: 'تم إنشاء الفعالية.', group: 'المجموعة', studentId: 'معرف الطالب', studentName: 'اسم الطالب', assignmentTitle: 'عنوان الواجب', assignmentDescriptionArabic: 'وصف الواجب باللغة العربية', assignmentDescriptionGerman: 'وصف الواجب باللغة الألمانية', attachments: 'المرفقات', addAttachments: 'إضافة ملفات (بحد أقصى 5 ملفات، 10 ميجابايت لكل ملف)', downloadAttachment: 'تنزيل', removeAttachment: 'حذف المرفق', deleteAssignment: 'حذف الواجب', confirmDeleteAssignment: 'هل تريد حذف هذا الواجب وجميع ملفاته المرفوعة؟', attachmentLimit: 'اختر حتى 5 ملفات، بحد أقصى 10 ميجابايت لكل ملف.', attachmentUploadFailed: 'تم إنشاء الواجب، ولكن تعذر رفع مرفق واحد أو أكثر.', dueDate: 'تاريخ التسليم', createAssignment: 'نشر الواجب', assignmentCreated: 'تم نشر الواجب', attendanceStatus: 'الحالة', present: 'حاضر', absent: 'غائب', late: 'متأخر', saveAttendance: 'حفظ الحضور', attendanceSaved: 'تم حفظ الحضور', loginButton: 'تسجيل الدخول', signupButton: 'إنشاء حساب', chooseAccountType: 'اختر نوع الحساب', accountType: 'نوع الحساب', signupNote: 'تحتاج جميع الحسابات الجديدة إلى موافقة الإدارة.', accountCreated: 'تم إنشاء الحساب. يرجى انتظار موافقة الإدارة.', groupId: 'معرف المجموعة', subject: 'المادة', level: 'المستوى', teacherUid: 'معرف المعلم', studentIds: 'الطلاب', schedule: 'الجدول الأسبوعي', createGroup: 'إنشاء مجموعة', groupCreated: 'تم إنشاء المجموعة وتعيينها.', attended: 'حاضر', markAttendance: 'تسجيل الحضور', attendanceDate: 'تاريخ الحصة', attendanceSummary: 'ملخص الحضور', attendanceRate: 'نسبة الحضور', viewHistory: 'عرض سجل الطالب', history: 'السجل', noAttendanceData: 'لا توجد بيانات حضور بعد.', saturdayOnly: 'يرجى اختيار يوم السبت.'
     ,createStudent: 'إنشاء سجل طالب', studentCreated: 'تم إنشاء الطالب', approvedParents: 'حسابات أولياء الأمور المعتمدة', parentName: 'ولي الأمر', noStudent: 'لا يوجد سجل للطفل', createStudentForParent: 'إنشاء سجل للطفل', enterChildName: 'أدخل اسم الطفل', studentLinked: 'تم إنشاء سجل الطفل وربطه بولي الأمر.', requestedChild: 'الطفل المطلوب', name: 'الاسم الكامل', students: 'الطلاب', teachers: 'المعلمون', unreadMessages: 'الرسائل غير المقروءة', unreadAssignments: 'الواجبات غير المقروءة', recipientType: 'إرسال إلى', everyone: 'الجميع', groupRecipient: 'مجموعة', teacherRecipient: 'معلم', parentRecipient: 'ولي أمر', individualRecipient: 'ولي أمر محدد', recipient: 'المستلم', selectRecipient: 'اختر المستلم', messageSent: 'تم إرسال الرسالة.', sendMessage: 'إرسال الرسالة', noRecords: 'لا توجد سجلات بعد.', existingGroups: 'المجموعات الحالية', noGroups: 'لم يتم إنشاء أي مجموعات بعد.', edit: 'تعديل', deleteAction: 'حذف', updateGroup: 'تحديث المجموعة', groupUpdated: 'تم تحديث المجموعة.', groupDeleted: 'تم حذف المجموعة.', cancelEdit: 'إلغاء التعديل', confirmDeleteGroup: 'حذف هذه المجموعة؟ لا يمكن التراجع عن هذا.', sentOn: 'أُرسل في', inbox: 'الوارد', sent: 'المرسلة', back: 'رجوع',
 
     classSchedule: 'جدول الحصص', scheduleMenRoom: 'مسجد الرجال', scheduleKitchen: 'المطبخ', scheduleWomenRoom: 'مسجد النساء', scheduleOffice: 'المكتب', scheduleDuration: 'المدة', scheduleFrom: 'من', scheduleTo: 'إلى', scheduleBreak: 'استراحة', scheduleBreakLabel: 'وصف الاستراحة', scheduleEdit: 'تعديل جدول الحصص', scheduleSave: 'حفظ جدول الحصص', scheduleCancel: 'إلغاء', scheduleAddRow: 'إضافة فترة زمنية', scheduleDeleteRow: 'حذف الصف', scheduleSaved: 'تم حفظ جدول الحصص.', scheduleLoadError: 'تعذر تحميل جدول الحصص.', manageChildren: 'إدارة الأبناء', addChild: 'إضافة ابن', editChild: 'تعديل الابن', childName: 'اسم الابن', saveChild: 'حفظ الابن', childAdded: 'تمت إضافة الابن.', childUpdated: 'تم تحديث بيانات الابن.', studentNameUpdated: 'تم تحديث اسم الطالب.', studentRemoved: 'تم حذف ربط الطالب بحساب ولي الأمر.', addStudentForParent: 'إضافة طالب', saveChildName: 'حفظ الاسم', removeStudent: 'إزالة', confirmRemoveStudent: 'هل تريد إزالة هذا الطالب من حساب ولي الأمر؟ إذا لم يكن هناك ولي أمر آخر مرتبط به، فسيتم حذف سجل الطالب وإزالته من المجموعات.', additionalChildrenNote: 'بعد تفعيل حسابك، يمكنك إضافة أبناء آخرين من لوحة التحكم.', placementFormNotice: '⚠️ مهم: قبل متابعة التسجيل، يرجى تعبئة استمارة تحديد مستوى الطفل في اللغة العربية والقرآن الكريم. تساعدنا هذه الاستمارة في تحديد المستوى المناسب لطفلكم، ويجب تعبئتها قبل إكمال التسجيل.', placementFormLink: 'فتح استمارة تحديد مستوى اللغة العربية والقرآن الكريم', selectChild: 'اختر الابن',
@@ -322,13 +325,13 @@ const translations: Record<Locale, Record<string, string>> = {
     ,privacyLegalBasis: 'الأساس القانوني (اللائحة الأوروبية GDPR)'
     ,privacyLegalText: 'تستند المعالجة إلى الموافقة الصريحة من ولي الأمر (المادة 6(1)(أ) و8 من لائحة GDPR). تُمنح الموافقة عند التسجيل ويمكن سحبها في أي وقت دون أي عواقب.'
     ,privacyStorage: 'تخزين البيانات'
-    ,privacyStorageText: 'تُخزَّن جميع البيانات في Google Firebase Firestore في مركز البيانات المقع في فرانكفورت، ألمانيا (منطقة europe-west3). لا تغادر البيانات الاتحاد الأوروبي.'
+    ,privacyStorageText: 'تُخزَّن بيانات المدرسة في Google Firebase Firestore في فرانكفورت، ألمانيا (منطقة europe-west3)، وتُخزَّن ملفات الواجبات في مساحة تخزين خاصة على Cloudflare R2 مضبوطة على نطاق الاتحاد الأوروبي.'
     ,privacyRetention: 'مدة الاحتفاظ بالبيانات'
     ,privacyRetentionText: 'تُحتفظ بالبيانات الشخصية طوال فترة التحاق الطفل بالمدرسة وحتى 6 أشهر بعد مغادرته، ثم تُحذف نهائياً عند الطلب أو تلقائياً.'
     ,privacyRights: 'حقوقك (المواد 15–20 من GDPR)'
     ,privacyRightsText: 'يحق لك الاطلاع على بياناتك وتصحيحها وحذفها أو نقلها في أي وقت. يمكنك سحب موافقتك دون التأثير على مشاركة طفلك. تواصل مع إدارة المدرسة عبر قسم الرسائل لممارسة هذه الحقوق.'
     ,privacyThirdParty: 'الأطراف الثالثة'
-    ,privacyThirdPartyText: 'نستخدم Google Firebase كمزود تقني للبنية التحتية (معالج البيانات). لا تُباع أي بيانات ولا تُشارك مع المعلنين أو أي طرف ثالث. تعمل Google بموجب اتفاقية معالجة بيانات متوافقة مع لائحة GDPR.'
+    ,privacyThirdPartyText: 'نستخدم Google Firebase وCloudflare كمزودين تقنيين للبنية التحتية لمعالجة بيانات المدرسة وتخزين ملفات الواجبات الخاصة. لا تُباع البيانات ولا تُشارك مع المعلنين، وتخضع المعالجة لشروط معالجة البيانات الخاصة بكل مزود.'
     ,privacyComplaint: 'حق تقديم شكوى'
     ,privacyComplaintText: 'يحق لك تقديم شكوى إلى مفوض حماية البيانات في ولاية هيسن (Hessischer Beauftragter für Datenschutz und Informationsfreiheit — HBDI): www.datenschutz.hessen.de · Gustav-Stresemann-Ring 1, 65189 Wiesbaden.'
     ,privacyLastUpdated: 'آخر تحديث: سبتمبر 2026'
@@ -372,8 +375,11 @@ function App() {
   const [eventTitle, setEventTitle] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventMessage, setEventMessage] = useState('');
-  const [assignmentTitle, setAssignmentTitle] = useState('');
-  const [assignmentDescription, setAssignmentDescription] = useState('');
+  const [assignmentDescriptionAr, setAssignmentDescriptionAr] = useState('');
+  const [assignmentDescriptionDe, setAssignmentDescriptionDe] = useState('');
+  const [assignmentFiles, setAssignmentFiles] = useState<File[]>([]);
+  const [assignmentRecords, setAssignmentRecords] = useState<AssignmentRecord[]>([]);
+  const [assignmentBusy, setAssignmentBusy] = useState(false);
   const [assignmentDueDate, setAssignmentDueDate] = useState('');
   const [assignmentGroupId, setAssignmentGroupId] = useState('');
   const [attendanceDate, setAttendanceDate] = useState('');
@@ -677,7 +683,7 @@ function App() {
           let field = role === 'parent' ? 'studentId' : 'groupId';
           if (role === 'parent' && activeSection === 'assignments') {
             const childSnapshots = await getExistingDocs('students', selectedChildId ? [selectedChildId] : []);
-            identifiers = [...new Set(childSnapshots.flatMap((snapshot) => (snapshot.data()?.groupMemberships || []).map((membership: { groupId: string }) => membership.groupId)))];
+            identifiers = [...new Set(childSnapshots.flatMap((snapshot) => { const data = snapshot.data() || {}; return [...(data.groupMemberships || []).map((membership: { groupId: string }) => membership.groupId), ...(data.groupIds || [])]; }))];
             field = 'groupId';
           }
           snapshots = role === 'admin'
@@ -691,6 +697,13 @@ function App() {
 
         if (cancelled) return;
         const sentLabel = translations[locale].sentOn;
+        if (activeSection === 'assignments') {
+          const records = snapshots.flatMap((snapshot) => snapshot.docs.map((item) => {
+            const data = item.data();
+            return { id: item.id, groupId: data.groupId || '', teacherId: data.teacherId || '', descriptionAr: data.descriptionAr || '', descriptionDe: data.descriptionDe || data.description || '', description: data.description || '', dueDate: data.dueDate || '', createdAt: data.createdAt || '', attachments: Array.isArray(data.attachments) ? data.attachments as AssignmentAttachment[] : [] };
+          })).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+          setAssignmentRecords(records);
+        }
         if (activeSection === 'messages') {
           const records = snapshots.flatMap((snapshot) => snapshot.docs.map((item) => {
             const data = item.data();
@@ -723,7 +736,7 @@ function App() {
                     const teacherName = data.teacherId === user.uid
                       ? (profileName || user.email || data.teacherId)
                       : (availableUsers.find((candidate) => candidate.id === data.teacherId)?.name || data.teacherId || translations[locale].teacher);
-                    return `${data.title || 'Assignment'} · ${teacherName} · ${groupName} · ${data.description || ''} · Due ${data.dueDate || 'date not set'}${sentAt ? ` · ${sentLabel} ${sentAt}` : ''}`;
+                    return `${teacherName} · ${groupName} · ${data.descriptionAr || ''} · ${data.descriptionDe || data.description || ''} · Due ${data.dueDate || 'date not set'}${sentAt ? ` · ${sentLabel} ${sentAt}` : ''}`;
                   })()
                 : `${data.date || 'Attendance'} · ${data.status || data.attendanceStatus || 'recorded'}`;
           return { id: item.id, text };
@@ -1102,17 +1115,48 @@ function App() {
     }
   };
 
+  const assignmentWorkerRequest = async (path: string, method: 'GET' | 'POST' | 'DELETE', body?: BodyInit) => {
+    if (!user) throw new Error('Authentication required');
+    const workerUrl = import.meta.env.VITE_EMAIL_NOTIFICATION_WORKER_URL as string | undefined;
+    if (!workerUrl) throw new Error('Assignment file service is not configured');
+    const token = await user.getIdToken();
+    const response = await fetch(new URL(path, workerUrl).toString(), {
+      method,
+      headers: { Authorization: `Bearer ${token}` },
+      ...(body ? { body } : {})
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({})) as { error?: string };
+      throw new Error(result.error || 'Assignment file request failed');
+    }
+    return response;
+  };
+
+  const uploadAssignmentFiles = async (assignmentId: string, files: File[]) => {
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+      await assignmentWorkerRequest(`api/assignments/${assignmentId}/attachments`, 'POST', formData);
+    }
+  };
+
   const createAssignment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!user || role !== 'teacher' || !assignmentGroupId || !assignmentTitle.trim()) return;
+    if (!user || role !== 'teacher' || !assignmentGroupId || !assignmentDescriptionAr.trim() || !assignmentDescriptionDe.trim() || assignmentBusy) return;
+    if (assignmentFiles.length > 5 || assignmentFiles.some((file) => file.size > 10 * 1024 * 1024)) {
+      setTeacherMessage(t.attachmentLimit);
+      return;
+    }
+    setAssignmentBusy(true);
     try {
       const createdAssignment = await addDoc(collection(db, 'assignments'), {
         groupId: assignmentGroupId,
         teacherId: user.uid,
-        title: assignmentTitle.trim(),
-        description: assignmentDescription.trim(),
+        descriptionAr: assignmentDescriptionAr.trim(),
+        descriptionDe: assignmentDescriptionDe.trim(),
         dueDate: assignmentDueDate,
         unread: true,
+        attachments: [],
         createdAt: new Date().toISOString()
       });
       const assignmentGroup = availableGroups.find((group) => group.id === assignmentGroupId);
@@ -1129,13 +1173,61 @@ function App() {
           });
         }
       }
-      setAssignmentTitle('');
-      setAssignmentDescription('');
+      let uploadFailed = false;
+      if (assignmentFiles.length) {
+        try {
+          await uploadAssignmentFiles(createdAssignment.id, assignmentFiles);
+        } catch {
+          uploadFailed = true;
+        }
+      }
+      setAssignmentDescriptionAr('');
+      setAssignmentDescriptionDe('');
+      setAssignmentFiles([]);
       setAssignmentDueDate('');
-      setTeacherMessage(t.assignmentCreated);
+      setTeacherMessage(uploadFailed ? t.attachmentUploadFailed : t.assignmentCreated);
       setLiveItems((current) => ({ ...current, assignments: undefined }));
       setActiveSection('dashboard');
       setTimeout(() => setActiveSection('assignments'), 0);
+    } catch {
+      setTeacherMessage(t.approvalError);
+    } finally {
+      setAssignmentBusy(false);
+    }
+  };
+
+  const downloadAssignmentAttachment = async (assignmentId: string, attachment: AssignmentAttachment) => {
+    try {
+      const response = await assignmentWorkerRequest(`api/assignments/${assignmentId}/attachments/${attachment.id}`, 'GET');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = attachment.name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setTeacherMessage(t.approvalError);
+    }
+  };
+
+  const removeAssignmentAttachment = async (assignmentId: string, attachmentId: string) => {
+    try {
+      await assignmentWorkerRequest(`api/assignments/${assignmentId}/attachments/${attachmentId}`, 'DELETE');
+      setAssignmentRecords((records) => records.map((record) => record.id === assignmentId ? { ...record, attachments: record.attachments.filter((attachment) => attachment.id !== attachmentId) } : record));
+    } catch {
+      setTeacherMessage(t.approvalError);
+    }
+  };
+
+  const deleteAssignment = async (assignmentId: string) => {
+    if (!window.confirm(t.confirmDeleteAssignment)) return;
+    try {
+      await assignmentWorkerRequest(`api/assignments/${assignmentId}`, 'DELETE');
+      setAssignmentRecords((records) => records.filter((record) => record.id !== assignmentId));
+      setLiveItems((current) => ({ ...current, assignments: undefined }));
     } catch {
       setTeacherMessage(t.approvalError);
     }
@@ -1481,7 +1573,7 @@ function App() {
             </article>
           )}
 
-          {['dashboard', 'calendar', 'assignments'].includes(activeSection) && (
+          {['dashboard', 'calendar'].includes(activeSection) && (
             <article className="detail-card">
               <div className="detail-card-heading">
                 <div>
@@ -1530,13 +1622,41 @@ function App() {
               <span className="eyebrow">{t.teacher}</span>
               <h3>{t.createAssignment}</h3>
               <form className="event-form teacher-form" onSubmit={createAssignment}>
-                <label>{t.group}<select value={assignmentGroupId} onChange={(event) => setAssignmentGroupId(event.target.value)} required><option value="">{t.group}</option>{assignedGroupIds.map((groupId) => <option key={groupId} value={groupId}>{groupId}</option>)}</select></label>
-                <label>{t.assignmentTitle}<input value={assignmentTitle} onChange={(event) => setAssignmentTitle(event.target.value)} required /></label>
+                <label>{t.group}<select value={assignmentGroupId} onChange={(event) => setAssignmentGroupId(event.target.value)} required><option value="">{t.group}</option>{assignedGroupIds.map((groupId) => <option key={groupId} value={groupId}>{availableGroups.find((group) => group.id === groupId)?.name || groupId}</option>)}</select></label>
+                <label>{t.assignmentDescriptionArabic}<textarea value={assignmentDescriptionAr} onChange={(event) => setAssignmentDescriptionAr(event.target.value)} rows={4} required /></label>
+                <label>{t.assignmentDescriptionGerman}<textarea value={assignmentDescriptionDe} onChange={(event) => setAssignmentDescriptionDe(event.target.value)} rows={4} required /></label>
                 <label>{t.dueDate}<input type="date" value={assignmentDueDate} onChange={(event) => setAssignmentDueDate(event.target.value)} /></label>
-                <label>{t.description}<input value={assignmentDescription} onChange={(event) => setAssignmentDescription(event.target.value)} /></label>
-                <button className="primary-action" type="submit">{t.createAssignment}</button>
+                <label className="assignment-file-label">{t.attachments}<input type="file" accept=".pdf,.docx,.xlsx,.jpg,.png" multiple onChange={(event) => {
+                  const files = Array.from(event.target.files || []);
+                  if (files.length > 5 || files.some((file) => file.size > 10 * 1024 * 1024)) {
+                    setTeacherMessage(t.attachmentLimit);
+                    event.currentTarget.value = '';
+                    return;
+                  }
+                  setTeacherMessage('');
+                  setAssignmentFiles(files);
+                }} /><small>{t.addAttachments}</small></label>
+                {assignmentFiles.length > 0 && <ul className="assignment-pending-files">{assignmentFiles.map((file) => <li key={file.name}>{file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB</li>)}</ul>}
+                <button className="primary-action" type="submit" disabled={assignmentBusy}>{assignmentBusy ? '…' : t.createAssignment}</button>
               </form>
               {teacherMessage && <p className="approval-message">{teacherMessage}</p>}
+            </article>
+          )}
+
+          {activeSection === 'assignments' && (
+            <article className="detail-card">
+              <div className="detail-card-heading"><div><span className="eyebrow">{t.assignments}</span><h3>{t.assignments}</h3></div><span className="count-badge">{assignmentRecords.length}</span></div>
+              {assignmentRecords.length === 0 ? <p className="muted">{t.noRecords}</p> : <div className="assignment-list">
+                {assignmentRecords.map((assignment) => (
+                  <section className="assignment-card" key={assignment.id}>
+                    <div className="assignment-card-heading"><strong>{availableGroups.find((group) => group.id === assignment.groupId)?.name || assignment.groupId}</strong>{assignment.dueDate && <span className="muted">{t.dueDate}: {assignment.dueDate}</span>}</div>
+                    {assignment.descriptionAr && <div className="assignment-description" dir="rtl"><strong>{t.assignmentDescriptionArabic}</strong><p>{assignment.descriptionAr}</p></div>}
+                    {(assignment.descriptionDe || assignment.description) && <div className="assignment-description"><strong>{t.assignmentDescriptionGerman}</strong><p>{assignment.descriptionDe || assignment.description}</p></div>}
+                    {assignment.attachments.length > 0 && <div className="assignment-attachments"><strong>{t.attachments}</strong><ul>{assignment.attachments.map((attachment) => <li key={attachment.id}><span>{attachment.name} · {(attachment.size / 1024 / 1024).toFixed(2)} MB</span><div className="assignment-file-actions"><button className="secondary-action small-action" type="button" onClick={() => void downloadAssignmentAttachment(assignment.id, attachment)}>{t.downloadAttachment}</button>{(role === 'admin' || (role === 'teacher' && assignment.teacherId === user?.uid)) && <button className="danger-action small-action" type="button" onClick={() => void removeAssignmentAttachment(assignment.id, attachment.id)}>{t.removeAttachment}</button>}</div></li>)}</ul></div>}
+                    {(role === 'admin' || (role === 'teacher' && assignment.teacherId === user?.uid)) && <div className="assignment-admin-actions"><button className="danger-action small-action" type="button" onClick={() => void deleteAssignment(assignment.id)}>{t.deleteAssignment}</button></div>}
+                  </section>
+                ))}
+              </div>}
             </article>
           )}
 

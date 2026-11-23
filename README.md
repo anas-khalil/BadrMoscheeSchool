@@ -53,7 +53,7 @@ Teachers can:
 - View their assigned groups and students.
 - Record Saturday attendance.
 - Mark students present, absent, or late.
-- Post assignments/homework to a group.
+- Post assignments/homework to a group with Arabic and German descriptions and up to five private file attachments.
 - Communicate with parents and administrators.
 - Receive notifications when assigned to or removed from groups.
 
@@ -63,7 +63,7 @@ Parents can:
 
 - View their linked children.
 - View relevant group/academic information.
-- View assignments for their children.
+- View assignments for their children, with private attachments accessible only when their child belongs to the assignment group.
 - View permitted attendance information.
 - Receive school announcements.
 - Communicate with teachers and administrators.
@@ -351,7 +351,7 @@ The application is installable as a Progressive Web App on supported devices. Vi
 
 ## Privacy and data protection
 
-The system handles personal information about children, parents, and teachers. The application therefore includes privacy/consent flows and relationship-based access controls.
+The system handles personal information about children, parents, and teachers. The application therefore includes privacy/consent flows and relationship-based access controls. Assignment attachments are stored in a private Cloudflare R2 bucket configured for the EU jurisdiction; ensure the bucket is created with that setting before deployment.
 
 Important principles include:
 
@@ -439,3 +439,8 @@ Never place Firebase Admin credentials or the Resend API key in frontend code.
 ## Project status
 
 The core school-management workflows are implemented and tested against the Firebase-backed application and transactional email infrastructure. The architecture is intentionally lightweight and suitable for the current school size while leaving room for additional features and workflows.
+
+
+## Private assignment attachments
+
+Assignment files are stored in a private Cloudflare R2 bucket and are accessed only through the authenticated assignment-file Worker routes. The Worker verifies Firebase ID tokens and checks active user roles and group/child relationships for every operation. The bucket must remain private (do not enable public access or attach a public custom domain). Create the bucket with `npx wrangler r2 bucket create badr-school-assignment-files --jurisdiction eu --location weur` and deploy the updated Worker with the `ASSIGNMENT_FILES` R2 binding. The EU jurisdiction cannot be changed after creation. Upload limits are 10 MB per file and five attachments per assignment; supported formats are PDF, DOCX, XLSX, JPG, and PNG. Deleting an assignment removes its R2 objects before deleting its Firestore record.

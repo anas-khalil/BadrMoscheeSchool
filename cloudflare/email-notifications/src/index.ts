@@ -4,15 +4,17 @@ type Env = {
   ADMIN_UIDS: string;
   FIREBASE_SERVICE_ACCOUNT_JSON: string;
   ALLOWED_ORIGIN: string;
+  ASSIGNMENT_FILES: R2Bucket;
 };
 
-type FsValue = { stringValue?: string; booleanValue?: boolean; integerValue?: string; timestampValue?: string; arrayValue?: { values?: FsValue[] } };
+type FsValue = { stringValue?: string; booleanValue?: boolean; integerValue?: string; timestampValue?: string; arrayValue?: { values?: FsValue[] }; mapValue?: { fields?: Record<string, FsValue> } };
 type FsDoc = { name: string; fields?: Record<string, FsValue> };
 
 const jsonHeaders = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Expose-Headers': 'Content-Disposition'
 };
 
 function response(body: unknown, status: number, origin: string) {
@@ -250,7 +252,7 @@ async function processQueue(env: Env) {
         if (type === 'assignment-parent') {
           const assignment = str(notification, 'assignmentId') ? await getDoc(env, 'assignments', str(notification, 'assignmentId')!) : null;
           const student = str(notification, 'studentId') ? await getDoc(env, 'students', str(notification, 'studentId')!) : null;
-          details = 'Child: ' + (str(student || undefined, 'name') || '') + '\nAssignment: ' + (str(assignment || undefined, 'title') || '') + '\nDescription: ' + (str(assignment || undefined, 'description') || '') + '\nDue date: ' + (str(assignment || undefined, 'dueDate') || '');
+          details = 'Child: ' + (str(student || undefined, 'name') || '') + (str(assignment || undefined, 'title') ? '\nAssignment: ' + str(assignment || undefined, 'title') : '') + '\nAssignment description (Arabic): ' + (str(assignment || undefined, 'descriptionAr') || '') + '\nAssignment description (German): ' + (str(assignment || undefined, 'descriptionDe') || str(assignment || undefined, 'description') || '') + '\nDue date: ' + (str(assignment || undefined, 'dueDate') || '');
         }
         await sendEmail(env, email, name, locale, type, details);
       }
@@ -280,10 +282,142 @@ async function verifyFirebaseIdToken(token: string, env: Env) {
   return valid ? parsed.payload.sub : null;
 }
 
+
+type AssignmentAttachmentMeta = { id: string; name: string; size: number; contentType: string; objectKey: string; uploadedAt: string; uploadedBy: string };
+const allowedFileTypes: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.jpg': 'image/jpeg',
+  '.png': 'image/png'
+};
+function fsString(value: FsValue | undefined) { return value?.stringValue || ''; }
+function fsStrings(doc: FsDoc | null, key: string) { return (doc?.fields?.[key]?.arrayValue?.values || []).map((value) => fsString(value)).filter(Boolean); }
+function fsAttachments(doc: FsDoc | null): AssignmentAttachmentMeta[] {
+  return (doc?.fields?.attachments?.arrayValue?.values || []).flatMap((value) => {
+    const fields = value.mapValue?.fields;
+    if (!fields) return [];
+    const item = { id: fsString(fields.id), name: fsString(fields.name), size: Number(fields.size?.integerValue || 0), contentType: fsString(fields.contentType), objectKey: fsString(fields.objectKey), uploadedAt: fsString(fields.uploadedAt), uploadedBy: fsString(fields.uploadedBy) };
+    return item.id && item.objectKey ? [item] : [];
+  });
+}
+function encodeAttachments(items: AssignmentAttachmentMeta[]) {
+  return { arrayValue: { values: items.map((item) => ({ mapValue: { fields: {
+    id: { stringValue: item.id }, name: { stringValue: item.name }, size: { integerValue: String(item.size) },
+    contentType: { stringValue: item.contentType }, objectKey: { stringValue: item.objectKey },
+    uploadedAt: { stringValue: item.uploadedAt }, uploadedBy: { stringValue: item.uploadedBy }
+  } } })) } };
+}
+async function saveAttachments(env: Env, assignmentId: string, items: AssignmentAttachmentMeta[]) {
+  const token = await googleToken(env);
+  const url = 'https://firestore.googleapis.com/v1/projects/' + env.FIREBASE_PROJECT_ID + '/databases/(default)/documents/assignments/' + encodeURIComponent(assignmentId) + '?updateMask.fieldPaths=attachments';
+  const result = await fetch(url, { method: 'PATCH', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { attachments: encodeAttachments(items) } }) });
+  if (!result.ok) throw new Error('Could not update assignment attachment metadata');
+}
+async function activeUser(env: Env, uid: string) {
+  const user = await getDoc(env, 'users', uid);
+  if (!user || str(user, 'status') !== 'active') return null;
+  return user;
+}
+async function canAccessAssignment(env: Env, uid: string, user: FsDoc, assignment: FsDoc, action: 'read' | 'write' | 'delete') {
+  const role = str(user, 'role');
+  if (role === 'admin') return true;
+  const groupId = str(assignment, 'groupId');
+  if (!groupId) return false;
+  const group = await getDoc(env, 'groups', groupId);
+  if (!group) return false;
+  if (role === 'teacher') return fsStrings(user, 'assignedGroupIds').includes(groupId) && (action === 'read' || str(assignment, 'teacherId') === uid);
+  if (role === 'parent' && action === 'read') {
+    const children = fsStrings(user, 'linkedChildIds');
+    return children.some((childId) => fsStrings(group, 'studentIds').includes(childId));
+  }
+  return false;
+}
+function validFileSignature(extension: string, bytes: Uint8Array) {
+  if (extension === '.pdf') return new TextDecoder().decode(bytes.slice(0, 5)) === '%PDF-';
+  if (extension === '.jpg') return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  if (extension === '.png') return bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+  if (extension === '.docx' || extension === '.xlsx') return bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
+  return false;
+}
+function safeFileName(name: string) { return name.replace(/[\/\\"]/g, '_').slice(0, 180) || 'attachment'; }
+async function handleAssignmentFiles(request: Request, env: Env, uid: string, origin: string) {
+  const url = new URL(request.url);
+  const match = url.pathname.match(/^\/api\/assignments\/([^/]+)(?:\/attachments(?:\/([^/]+))?)?$/);
+  if (!match) return response({ error: 'Not found' }, 404, origin);
+  const assignmentId = decodeURIComponent(match[1]);
+  const attachmentId = match[2] ? decodeURIComponent(match[2]) : '';
+  const assignment = await getDoc(env, 'assignments', assignmentId);
+  if (!assignment) return response({ error: 'Assignment not found' }, 404, origin);
+  const user = await activeUser(env, uid);
+  if (!user) return response({ error: 'Active account required' }, 403, origin);
+  const isAssignmentRoute = url.pathname === '/api/assignments/' + match[1];
+  if (isAssignmentRoute && request.method === 'DELETE') {
+    if (!await canAccessAssignment(env, uid, user, assignment, 'delete')) return response({ error: 'Forbidden' }, 403, origin);
+    const attachments = fsAttachments(assignment);
+    await Promise.all(attachments.map((item) => env.ASSIGNMENT_FILES.delete(item.objectKey)));
+    await firestore(env, 'assignments/' + encodeURIComponent(assignmentId), { method: 'DELETE' });
+    return response({ ok: true }, 200, origin);
+  }
+  if (!attachmentId && request.method === 'POST') {
+    if (!await canAccessAssignment(env, uid, user, assignment, 'write')) return response({ error: 'Forbidden' }, 403, origin);
+    const current = fsAttachments(assignment);
+    if (current.length >= 5) return response({ error: 'Maximum of five attachments per assignment' }, 400, origin);
+    const form = await request.formData();
+    const file = form.get('file');
+    if (!(file instanceof File)) return response({ error: 'A file is required' }, 400, origin);
+    if (file.size <= 0 || file.size > 10 * 1024 * 1024) return response({ error: 'Each file must be no larger than 10 MB' }, 400, origin);
+    const name = safeFileName(file.name);
+    const extension = name.toLowerCase().slice(name.lastIndexOf('.'));
+    const expectedType = allowedFileTypes[extension];
+    if (!expectedType || file.type !== expectedType) return response({ error: 'Unsupported file type' }, 400, origin);
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (!validFileSignature(extension, bytes)) return response({ error: 'The file content does not match its extension' }, 400, origin);
+    const id = crypto.randomUUID();
+    const objectKey = 'assignments/' + assignmentId + '/' + id;
+    await env.ASSIGNMENT_FILES.put(objectKey, bytes, { httpMetadata: { contentType: expectedType } });
+    const next = [...current, { id, name, size: file.size, contentType: expectedType, objectKey, uploadedAt: new Date().toISOString(), uploadedBy: uid }];
+    try { await saveAttachments(env, assignmentId, next); }
+    catch (error) { await env.ASSIGNMENT_FILES.delete(objectKey); throw error; }
+    return response({ ok: true, attachment: { id, name, size: file.size, contentType: expectedType, uploadedAt: new Date().toISOString() } }, 201, origin);
+  }
+  if (attachmentId) {
+    const attachments = fsAttachments(assignment);
+    const attachment = attachments.find((item) => item.id === attachmentId);
+    if (!attachment) return response({ error: 'Attachment not found' }, 404, origin);
+    if (request.method === 'GET') {
+      if (!await canAccessAssignment(env, uid, user, assignment, 'read')) return response({ error: 'Forbidden' }, 403, origin);
+      const object = await env.ASSIGNMENT_FILES.get(attachment.objectKey);
+      if (!object) return response({ error: 'File not found' }, 404, origin);
+      return new Response(object.body, { status: 200, headers: {
+        'Access-Control-Allow-Origin': origin, 'Access-Control-Expose-Headers': 'Content-Disposition',
+        'Content-Type': attachment.contentType, 'Content-Length': String(attachment.size),
+        'Content-Disposition': "attachment; filename*=UTF-8''" + encodeURIComponent(attachment.name),
+        'Cache-Control': 'private, no-store'
+      } });
+    }
+    if (request.method === 'DELETE') {
+      if (!await canAccessAssignment(env, uid, user, assignment, 'write')) return response({ error: 'Forbidden' }, 403, origin);
+      await env.ASSIGNMENT_FILES.delete(attachment.objectKey);
+      await saveAttachments(env, assignmentId, attachments.filter((item) => item.id !== attachmentId));
+      return response({ ok: true }, 200, origin);
+    }
+  }
+  return response({ error: 'Method not allowed' }, 405, origin);
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = env.ALLOWED_ORIGIN || '*';
     if (request.method === 'OPTIONS') return new Response(null, { headers: { ...jsonHeaders, 'Access-Control-Allow-Origin': origin } });
+    const url = new URL(request.url);
+    if (url.pathname.startsWith('/api/assignments/')) {
+      const token = (request.headers.get('Authorization') || '').replace(/^Bearer /, '');
+      const uid = token ? await verifyFirebaseIdToken(token, env).catch(() => null) : null;
+      if (!uid) return response({ error: 'Authentication required' }, 401, origin);
+      try { return await handleAssignmentFiles(request, env, uid, origin); }
+      catch (error) { console.error('Assignment file operation failed', error); return response({ error: 'Assignment file operation failed' }, 500, origin); }
+    }
     if (request.method !== 'POST') return response({ error: 'Method not allowed' }, 405, origin);
     const token = (request.headers.get('Authorization') || '').replace(/^Bearer /, '');
     const uid = token ? await verifyFirebaseIdToken(token, env).catch(() => null) : null;

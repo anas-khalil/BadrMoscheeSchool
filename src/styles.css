@@ -1434,3 +1434,7 @@ a { color: var(--brass-600); }
 .danger-action { border:1px solid #b53a32; border-radius:var(--radius-sm); background:var(--paper-0); color:#9f2f29; cursor:pointer; font-weight:700; padding:9px 12px; min-height:40px; white-space:nowrap; }
 .danger-action:hover { background:#fff0ee; }
 @media(max-width:759px){.approval-parent-child{grid-template-columns:minmax(0,1fr) minmax(0,auto);}.approval-parent-child input{grid-column:1/-1}.approval-parent-children{min-width:260px}}
+
+
+/* Assignment descriptions and private file attachments */
+.assignment-list{display:grid;gap:16px;margin-top:16px}.assignment-card{border:1px solid var(--border,#dbe3ec);border-radius:14px;padding:16px;background:var(--card,#fff);display:grid;gap:14px}.assignment-card-heading{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.assignment-description{padding:12px;border-radius:10px;background:var(--surface,#f8fafc);white-space:pre-wrap}.assignment-description p{margin:8px 0 0;overflow-wrap:anywhere}.assignment-attachments ul,.assignment-pending-files{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:8px}.assignment-attachments li{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--border,#e2e8f0)}.assignment-file-actions,.assignment-admin-actions{display:flex;gap:8px;flex-wrap:wrap}.assignment-file-label small{display:block;color:var(--muted,#64748b);margin-top:5px}.assignment-pending-files{font-size:.9rem;color:var(--muted,#64748b)}
