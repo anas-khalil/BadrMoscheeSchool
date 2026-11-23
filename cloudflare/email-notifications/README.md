@@ -64,7 +64,7 @@ The repository workflow `.github/workflows/deploy-cloudflare-worker.yml` deploys
 
 Add these repository Actions secrets under **Settings → Secrets and variables → Actions**:
 
-- `CLOUDFLARE_API_TOKEN`: a Cloudflare API token for the account that owns this Worker and R2 bucket. It needs permission to create/read R2 buckets (`Workers R2 Storage Write`) and deploy the existing Worker (`Workers Scripts Write`). Cloudflare may also require account metadata read permissions for Wrangler authentication.
+- `CLOUDFLARE_API_TOKEN`: a Cloudflare API token for the account that owns this Worker and R2 bucket. It needs `Workers R2 Storage Read` and `Workers R2 Storage Write` for bucket verification/creation, plus `Workers Scripts Write` to deploy the existing Worker. Wrangler authentication may also require `Account Settings Read`, `User Details Read`, and `User Memberships Read`.
 - `CLOUDFLARE_ACCOUNT_ID`: the Cloudflare account ID that owns the Worker and bucket.
 
 Create the token in Cloudflare's dashboard and restrict it to the relevant account. Do not put the token in source code, commit it, or send it in chat.
