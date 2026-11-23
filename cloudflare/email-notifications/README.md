@@ -51,7 +51,7 @@ The Resend domain `badrschule.com` must remain verified.
 
 ## Private assignment attachments (Cloudflare R2)
 
-The same Worker also serves private assignment-file operations. Create an R2 bucket named `badr-school-assignment-files` and choose an EU location/jurisdiction in the Cloudflare dashboard when creating it. The `ASSIGNMENT_FILES` binding is configured in `wrangler.toml`; no new Worker secrets are required. Deploy this Worker after creating the bucket and binding.
+The same Worker also serves private assignment-file operations. Create an R2 bucket named `badr-school-assignment-files` with EU jurisdiction and Western Europe location. You can create it with `npx wrangler r2 bucket create badr-school-assignment-files --jurisdiction eu --location weur`. R2 jurisdiction is immutable after bucket creation. The `ASSIGNMENT_FILES` binding is configured in `wrangler.toml`; no new Worker secrets are required. Deploy this Worker after creating the bucket and binding.
 
 The application sends Firebase ID tokens to the Worker. The Worker checks the active Firestore account, assignment, group membership, and parent-to-child links before allowing upload, download, attachment removal, or assignment deletion. Files are streamed through authenticated Worker endpoints; the bucket is not public and no permanent download URLs are stored or exposed. Uploads are limited to five files per assignment, 10 MB per file, with PDF, DOCX, XLSX, JPG, and PNG content-type and file-signature validation.
 
