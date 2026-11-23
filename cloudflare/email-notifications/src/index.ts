@@ -340,7 +340,7 @@ function validFileSignature(extension: string, bytes: Uint8Array) {
   if (extension === '.docx' || extension === '.xlsx') return bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
   return false;
 }
-function safeFileName(name: string) { return name.replace(/[\\/\\r\\n"]/g, '_').slice(0, 180) || 'attachment'; }
+function safeFileName(name: string) { return name.replace(/[\/\\"]/g, '_').slice(0, 180) || 'attachment'; }
 async function handleAssignmentFiles(request: Request, env: Env, uid: string, origin: string) {
   const url = new URL(request.url);
   const match = url.pathname.match(/^\/api\/assignments\/([^/]+)(?:\/attachments(?:\/([^/]+))?)?$/);
@@ -356,7 +356,7 @@ async function handleAssignmentFiles(request: Request, env: Env, uid: string, or
     if (!await canAccessAssignment(env, uid, user, assignment, 'delete')) return response({ error: 'Forbidden' }, 403, origin);
     const attachments = fsAttachments(assignment);
     await Promise.all(attachments.map((item) => env.ASSIGNMENT_FILES.delete(item.objectKey)));
-    await removeDoc(env, assignment.name);
+    await firestore(env, 'assignments/' + encodeURIComponent(assignmentId), { method: 'DELETE' });
     return response({ ok: true }, 200, origin);
   }
   if (!attachmentId && request.method === 'POST') {

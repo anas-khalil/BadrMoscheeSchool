@@ -351,7 +351,7 @@ The application is installable as a Progressive Web App on supported devices. Vi
 
 ## Privacy and data protection
 
-The system handles personal information about children, parents, and teachers. The application therefore includes privacy/consent flows and relationship-based access controls.
+The system handles personal information about children, parents, and teachers. The application therefore includes privacy/consent flows and relationship-based access controls. Assignment attachments are stored in a private Cloudflare R2 bucket configured for the EU jurisdiction; ensure the bucket is created with that setting before deployment.
 
 Important principles include:
 
