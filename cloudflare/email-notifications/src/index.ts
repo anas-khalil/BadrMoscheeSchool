@@ -252,7 +252,7 @@ async function processQueue(env: Env) {
         if (type === 'assignment-parent') {
           const assignment = str(notification, 'assignmentId') ? await getDoc(env, 'assignments', str(notification, 'assignmentId')!) : null;
           const student = str(notification, 'studentId') ? await getDoc(env, 'students', str(notification, 'studentId')!) : null;
-          details = 'Child: ' + (str(student || undefined, 'name') || '') + '\nAssignment description (Arabic): ' + (str(assignment || undefined, 'descriptionAr') || '') + '\nAssignment description (German): ' + (str(assignment || undefined, 'descriptionDe') || str(assignment || undefined, 'description') || '') + '\nDue date: ' + (str(assignment || undefined, 'dueDate') || '');
+          details = 'Child: ' + (str(student || undefined, 'name') || '') + (str(assignment || undefined, 'title') ? '\nAssignment: ' + str(assignment || undefined, 'title') : '') + '\nAssignment description (Arabic): ' + (str(assignment || undefined, 'descriptionAr') || '') + '\nAssignment description (German): ' + (str(assignment || undefined, 'descriptionDe') || str(assignment || undefined, 'description') || '') + '\nDue date: ' + (str(assignment || undefined, 'dueDate') || '');
         }
         await sendEmail(env, email, name, locale, type, details);
       }
