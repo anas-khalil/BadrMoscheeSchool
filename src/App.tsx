@@ -683,7 +683,7 @@ function App() {
           let field = role === 'parent' ? 'studentId' : 'groupId';
           if (role === 'parent' && activeSection === 'assignments') {
             const childSnapshots = await getExistingDocs('students', selectedChildId ? [selectedChildId] : []);
-            identifiers = [...new Set(childSnapshots.flatMap((snapshot) => (snapshot.data()?.groupMemberships || []).map((membership: { groupId: string }) => membership.groupId)))];
+            identifiers = [...new Set(childSnapshots.flatMap((snapshot) => { const data = snapshot.data() || {}; return [...(data.groupMemberships || []).map((membership: { groupId: string }) => membership.groupId), ...(data.groupIds || [])]; }))];
             field = 'groupId';
           }
           snapshots = role === 'admin'
