@@ -40,7 +40,7 @@ jobs:
 
           BUCKET_NAME="badr-school-assignment-files"
 
-          if npx --yes wrangler@4 r2 bucket create "$BUCKET_NAME" --jurisdiction eu --location weur; then
+          if npx --yes wrangler@4 r2 bucket create "$BUCKET_NAME" --jurisdiction eu; then
             echo "Created R2 bucket $BUCKET_NAME in the EU jurisdiction."
           else
             echo "Bucket creation did not succeed; verifying that the bucket already exists in the EU jurisdiction."
