@@ -11,3 +11,4 @@ crons = ["* * * * *"]
 [[r2_buckets]]
 binding = "ASSIGNMENT_FILES"
 bucket_name = "badr-school-assignment-files"
+jurisdiction = "eu"
