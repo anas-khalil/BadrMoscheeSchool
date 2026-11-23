@@ -51,7 +51,7 @@ The Resend domain `badrschule.com` must remain verified.
 
 ## Private assignment attachments (Cloudflare R2)
 
-The same Worker also serves private assignment-file operations. Create an R2 bucket named `badr-school-assignment-files` with EU jurisdiction and Western Europe location. You can create it with `npx wrangler r2 bucket create badr-school-assignment-files --jurisdiction eu --location weur`. R2 jurisdiction is immutable after bucket creation. The `ASSIGNMENT_FILES` binding is configured in `wrangler.toml`; no new Worker secrets are required. Deploy this Worker after creating the bucket and binding.
+The same Worker also serves private assignment-file operations. Before the first deployment, activate R2 for your Cloudflare account in the Cloudflare Dashboard: open **R2 Object Storage** and complete the **Get started / Enable R2** setup. Until R2 is enabled, the API can return error `10042` ("Please enable R2 through the Cloudflare Dashboard"). Then create an R2 bucket named `badr-school-assignment-files` with EU jurisdiction using `npx wrangler r2 bucket create badr-school-assignment-files --jurisdiction eu`. Do not add a `--location` hint to this command: Wrangler accepts a jurisdiction or a location hint, not both. R2 jurisdiction is immutable after bucket creation. The `ASSIGNMENT_FILES` binding is configured in `wrangler.toml`; no new Worker secrets are required. Deploy this Worker after creating the bucket and binding.
 
 The application sends Firebase ID tokens to the Worker. The Worker checks the active Firestore account, assignment, group membership, and parent-to-child links before allowing upload, download, attachment removal, or assignment deletion. Files are streamed through authenticated Worker endpoints; the bucket is not public and no permanent download URLs are stored or exposed. Uploads are limited to five files per assignment, 10 MB per file, with PDF, DOCX, XLSX, JPG, and PNG content-type and file-signature validation.
 
@@ -62,13 +62,13 @@ The assignment email queue remains the existing `assignment-parent` notification
 
 The repository workflow `.github/workflows/deploy-cloudflare-worker.yml` deploys this Worker when files under `cloudflare/email-notifications/` change on `main`. It can also be started manually from **Actions → Deploy Cloudflare Worker → Run workflow**.
 
-Add these repository Actions secrets under **Settings → Secrets and variables → Actions**:
+Enable R2 in the Cloudflare Dashboard before the first run. Then add these repository Actions secrets under **Settings → Secrets and variables → Actions**:
 
 - `CLOUDFLARE_API_TOKEN`: a Cloudflare API token for the account that owns this Worker and R2 bucket. It needs `Workers R2 Storage Read` and `Workers R2 Storage Write` for bucket verification/creation, plus `Workers Scripts Write` to deploy the existing Worker. Wrangler authentication may also require `Account Settings Read`, `User Details Read`, and `User Memberships Read`.
 - `CLOUDFLARE_ACCOUNT_ID`: the Cloudflare account ID that owns the Worker and bucket.
 
 Create the token in Cloudflare's dashboard and restrict it to the relevant account. Do not put the token in source code, commit it, or send it in chat.
 
-The workflow first attempts to create `badr-school-assignment-files` with EU jurisdiction and the `weur` location hint. If the bucket already exists, it verifies that it is available in the EU jurisdiction before continuing. It then deploys the Worker using this directory's `wrangler.toml`. The bucket remains private; the workflow does not enable `r2.dev` or a public custom domain.
+The workflow first attempts to create `badr-school-assignment-files` with EU jurisdiction (without a location hint, because the two options are mutually exclusive). If the bucket already exists, it verifies that it is available in the EU jurisdiction before continuing. It then deploys the Worker using this directory's `wrangler.toml`. The bucket remains private; the workflow does not enable `r2.dev` or a public custom domain.
 
 The workflow does not change the existing GitHub Pages deployment or the Worker notification queue. Existing Worker secrets (Resend and Firebase credentials) are managed separately in Cloudflare and are not copied into GitHub Actions.
